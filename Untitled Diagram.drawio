@@ -1,0 +1,25 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="z4ixIx6Yfspin88emkzv">
+    <mxGraphModel dx="1369" dy="743" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="nnYq-CmPuueQHJFwUfHJ-7" edge="1" parent="1" source="nnYq-CmPuueQHJFwUfHJ-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="nnYq-CmPuueQHJFwUfHJ-6" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nnYq-CmPuueQHJFwUfHJ-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Start&amp;nbsp;" vertex="1">
+          <mxGeometry height="70" width="110" x="380" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="nnYq-CmPuueQHJFwUfHJ-9" edge="1" parent="1" source="nnYq-CmPuueQHJFwUfHJ-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="nnYq-CmPuueQHJFwUfHJ-8" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nnYq-CmPuueQHJFwUfHJ-6" parent="1" style="whiteSpace=wrap;html=1;" value="Login&amp;nbsp;" vertex="1">
+          <mxGeometry height="60" width="120" x="375" y="175" as="geometry" />
+        </mxCell>
+        <mxCell id="nnYq-CmPuueQHJFwUfHJ-8" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="Admin?" vertex="1">
+          <mxGeometry height="80" width="80" x="395" y="305" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
