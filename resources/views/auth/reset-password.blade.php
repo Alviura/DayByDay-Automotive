@@ -1,4 +1,4 @@
-<x-guest-layout>
+<x-guest-layout heading="Choose a new password" subheading="Set a strong password for your account.">
     <form method="POST" action="{{ route('password.store') }}">
         @csrf
 

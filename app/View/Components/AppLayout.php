@@ -5,11 +5,10 @@ namespace App\View\Components;
 use Illuminate\View\Component;
 use Illuminate\View\View;
 
-class GuestLayout extends Component
+class AppLayout extends Component
 {
     public function __construct(
-        public string $heading = 'Welcome back',
-        public string $subheading = 'Sign in to access your workspace.',
+        public ?string $title = null,
     ) {
     }
 
@@ -18,6 +17,6 @@ class GuestLayout extends Component
      */
     public function render(): View
     {
-        return view('layouts.auth');
+        return view('layouts.app');
     }
 }

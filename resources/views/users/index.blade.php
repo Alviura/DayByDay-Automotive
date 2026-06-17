@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout title="Users">
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Users') }}</h2>
@@ -12,8 +12,6 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
-            <x-flash />
-
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <form method="GET" class="mb-4 flex gap-2">
                     <x-text-input name="search" value="{{ request('search') }}" placeholder="Search name or email…" class="w-full sm:w-80" />

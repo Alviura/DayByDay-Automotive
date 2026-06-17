@@ -4,6 +4,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WarehouseController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -32,6 +33,9 @@ Route::middleware('auth')->group(function () {
     // enforced in the controllers' constructors.
     Route::resource('users', UserController::class);
     Route::resource('roles', RoleController::class)->except('show');
+
+    // Master data (Phase 2). Per-action permissions enforced in controllers.
+    Route::resource('warehouses', WarehouseController::class);
 });
 
 require __DIR__.'/auth.php';

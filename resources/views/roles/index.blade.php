@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout title="Roles & Permissions">
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Roles & Permissions') }}</h2>
@@ -12,8 +12,6 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
-            <x-flash />
-
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <table class="min-w-full divide-y divide-gray-200 text-sm">
                     <thead>
