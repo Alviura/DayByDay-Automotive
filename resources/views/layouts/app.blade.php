@@ -258,12 +258,32 @@
                       style="background:rgba(255,255,255,.06)">soon</span>
             </span>
 
-            @can('warehouses.view')
+            @canany(['warehouses.view', 'shops.view', 'suppliers.view', 'master-data.view'])
                 <p class="sb-section">Master Data</p>
-                <a href="{{ route('warehouses.index') }}" class="sb-link {{ request()->routeIs('warehouses.*') ? 'active' : '' }}">
-                    <i class="fas fa-warehouse w-4 text-center text-orange-400"></i> Warehouses
-                </a>
-            @endcan
+                @can('warehouses.view')
+                    <a href="{{ route('warehouses.index') }}" class="sb-link {{ request()->routeIs('warehouses.*') ? 'active' : '' }}">
+                        <i class="fas fa-warehouse w-4 text-center text-orange-400"></i> Warehouses
+                    </a>
+                @endcan
+                @can('shops.view')
+                    <a href="{{ route('shops.index') }}" class="sb-link {{ request()->routeIs('shops.*') ? 'active' : '' }}">
+                        <i class="fas fa-store w-4 text-center text-orange-400"></i> Shops
+                    </a>
+                @endcan
+                @can('suppliers.view')
+                    <a href="{{ route('suppliers.index') }}" class="sb-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}">
+                        <i class="fas fa-truck w-4 text-center text-orange-400"></i> Suppliers
+                    </a>
+                @endcan
+                @can('master-data.view')
+                    <a href="{{ route('vehicle-makes.index') }}" class="sb-link {{ request()->routeIs('vehicle-makes.*') ? 'active' : '' }}">
+                        <i class="fas fa-car-side w-4 text-center text-orange-400"></i> Vehicle Makes
+                    </a>
+                    <a href="{{ route('vehicle-models.index') }}" class="sb-link {{ request()->routeIs('vehicle-models.*') ? 'active' : '' }}">
+                        <i class="fas fa-car w-4 text-center text-orange-400"></i> Vehicle Models
+                    </a>
+                @endcan
+            @endcanany
 
             @canany(['users.view', 'roles.view'])
                 <p class="sb-section">Administration</p>

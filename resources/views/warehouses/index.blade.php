@@ -240,10 +240,10 @@
             <div x-show="viewMode === 'grid'" x-cloak class="mi-grid-wrap">
                 @forelse ($warehouses as $warehouse)
                     <div class="mi-grid-item">
-                        <div class="flex items-start justify-between gap-2">
+                        <div class="mi-grid-item-head">
                             <div class="min-w-0">
                                 <span class="mi-cat-badge">{{ $warehouse->code }}</span>
-                                <p class="mi-pkg-name mt-2 truncate">{{ $warehouse->name }}</p>
+                                <p class="mi-pkg-name mi-grid-item-name truncate">{{ $warehouse->name }}</p>
                             </div>
                             @if ($warehouse->is_active)
                                 <span class="mi-status-active flex-shrink-0">Active</span>
@@ -251,20 +251,32 @@
                                 <span class="mi-status-inactive flex-shrink-0">Inactive</span>
                             @endif
                         </div>
-                        @if ($warehouse->address)
-                            <p class="mi-dest mt-3 text-xs"><i class="fas fa-map-pin"></i>{{ Str::limit($warehouse->address, 45) }}</p>
+                        @if ($warehouse->address || $warehouse->phone)
+                            <div class="mi-grid-item-meta">
+                                @if ($warehouse->address)
+                                    <p class="mi-dest text-xs"><i class="fas fa-map-pin"></i>{{ Str::limit($warehouse->address, 45) }}</p>
+                                @endif
+                                @if ($warehouse->phone)
+                                    <p class="flex items-center gap-1.5 text-xs text-gray-500">
+                                        <i class="fas fa-phone text-gray-300"></i>{{ $warehouse->phone }}
+                                    </p>
+                                @endif
+                            </div>
                         @endif
-                        @if ($warehouse->phone)
-                            <p class="mt-1.5 flex items-center gap-1.5 text-xs text-gray-500">
-                                <i class="fas fa-phone text-gray-300"></i>{{ $warehouse->phone }}
-                            </p>
-                        @endif
-                        <div class="mt-3 flex items-center justify-end gap-1 border-t border-gray-50 pt-3">
+                        <div class="mi-grid-item-actions">
                             @can('warehouses.view')
                                 <a href="{{ route('warehouses.show', $warehouse) }}" class="mi-action view"><i class="fas fa-eye"></i></a>
                             @endcan
                             @can('warehouses.manage')
                                 <a href="{{ route('warehouses.edit', $warehouse) }}" class="mi-action edit"><i class="fas fa-pen"></i></a>
+                                <form action="{{ route('warehouses.destroy', $warehouse) }}" method="POST" class="inline"
+                                      onsubmit="return confirm('Delete {{ addslashes($warehouse->name) }}?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="mi-action del" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
                             @endcan
                         </div>
                     </div>

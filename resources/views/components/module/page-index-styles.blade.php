@@ -183,8 +183,20 @@
         border: 1px solid #f0f0f0; border-radius: 12px;
         padding: 1.15rem 1.25rem;
         transition: box-shadow .15s;
+        display: flex; flex-direction: column; gap: .55rem;
     }
     .mi-grid-item:hover { box-shadow: 0 4px 14px rgba(0,0,0,.06); }
+    .mi-grid-item-head {
+        display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem;
+    }
+    .mi-grid-item-name { margin-top: .35rem; }
+    .mi-grid-item-meta {
+        display: flex; flex-direction: column; gap: .35rem;
+    }
+    .mi-grid-item-actions {
+        display: flex; align-items: center; justify-content: flex-end; gap: .35rem;
+        margin-top: .25rem;
+    }
 
     /* ── Badges & cells ── */
     .mi-pkg-name  { font-weight: 600; color: #111827; font-size: .875rem; }
