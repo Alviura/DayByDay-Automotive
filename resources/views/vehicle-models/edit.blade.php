@@ -8,7 +8,7 @@
         :subtitle="$vehicleModel->make->name . ' ' . $vehicleModel->name"
         icon="fa-car"
         card-title="Model Details"
-        :back-url="route('vehicle-models.index')"
+        :back-url="route('vehicle-catalog.index', ['view' => 'models', 'vehicle_make_id' => $vehicleModel->vehicle_make_id])"
         :action="route('vehicle-models.update', $vehicleModel)"
         method="PUT"
         submit-label="Save Changes"

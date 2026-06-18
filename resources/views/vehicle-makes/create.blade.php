@@ -8,7 +8,7 @@
         subtitle="Add a manufacturer or brand for grouping vehicle models."
         icon="fa-car-side"
         card-title="Make Details"
-        :back-url="route('vehicle-makes.index')"
+        :back-url="route('vehicle-catalog.index', ['view' => 'makes'])"
         :action="route('vehicle-makes.store')"
         method="POST"
         submit-label="Create Make"

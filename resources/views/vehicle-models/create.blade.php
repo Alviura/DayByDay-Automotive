@@ -8,7 +8,7 @@
         subtitle="Add a model under an existing vehicle make."
         icon="fa-car"
         card-title="Model Details"
-        :back-url="route('vehicle-models.index')"
+        :back-url="route('vehicle-catalog.index', array_filter(['view' => 'models', 'vehicle_make_id' => $selectedMakeId ?? null]))"
         :action="route('vehicle-models.store')"
         method="POST"
         submit-label="Create Model"
