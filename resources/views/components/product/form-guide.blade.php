@@ -1,0 +1,48 @@
+@props(['isEdit' => false])
+
+<x-module.form-guide :subtitle="'Tips for ' . ($isEdit ? 'updating' : 'creating') . ' a product'">
+    <section class="mi-guide-section">
+        <h3 class="mi-guide-section-title">
+            <i class="fas fa-car-side"></i> What is a product?
+        </h3>
+        <p class="mi-guide-text">
+            A product is a sellable part in your catalogue — identified by part number and optionally barcode. It links to category, unit, supplier, and vehicle fitment.
+        </p>
+    </section>
+
+    <section class="mi-guide-section">
+        <h3 class="mi-guide-section-title">
+            <i class="fas fa-list-check"></i> Field reference
+        </h3>
+        <ul class="mi-guide-list">
+            <li><strong>Part number</strong><span>Unique code — uppercase recommended (e.g. OIL-FIL-TYT-001).</span></li>
+            <li><strong>Primary fitment</strong><span>Main make/model this part is listed under.</span></li>
+            <li><strong>Additional fitment</strong><span>Extra models the same part fits via the compatibility pivot.</span></li>
+            <li><strong>Prices</strong><span>Cost and selling price — updated automatically on goods receipt later.</span></li>
+            <li><strong>Reorder level</strong><span>Triggers low-stock alerts once inventory is live.</span></li>
+        </ul>
+    </section>
+
+    <section class="mi-guide-section">
+        <h3 class="mi-guide-section-title">
+            <i class="fas fa-lightbulb"></i> Best practices
+        </h3>
+        <ul class="mi-guide-tips">
+            <li><i class="fas fa-check"></i> Use a consistent part-number pattern: TYPE-MAKE-MODEL-SEQ.</li>
+            <li><i class="fas fa-check"></i> Assign a barcode for faster POS scanning.</li>
+            <li><i class="fas fa-check"></i> Deactivate discontinued parts instead of deleting them.</li>
+        </ul>
+    </section>
+
+    @if ($isEdit)
+        <div class="mi-guide-note mi-guide-note-amber">
+            <i class="fas fa-triangle-exclamation"></i>
+            <p>Price changes here do not affect historical sales or ledger entries.</p>
+        </div>
+    @else
+        <div class="mi-guide-note mi-guide-note-blue">
+            <i class="fas fa-arrow-right"></i>
+            <p>After creating, stock can be received via procurement once those modules are built.</p>
+        </div>
+    @endif
+</x-module.form-guide>
