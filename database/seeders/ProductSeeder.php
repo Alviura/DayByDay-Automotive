@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductName;
-use App\Models\Supplier;
 use App\Models\Unit;
 use App\Models\VehicleMake;
 use App\Models\VehicleModel;
@@ -25,9 +24,6 @@ class ProductSeeder extends Seeder
         $pcs = Unit::where('abbreviation', 'PCS')->first();
         $set = Unit::where('abbreviation', 'SET')->first();
 
-        $agl = Supplier::where('code', 'SUP-AGL')->first();
-        $nms = Supplier::where('code', 'SUP-NMS')->first();
-
         $toyota = VehicleMake::where('name', 'Toyota')->first();
         $corolla = $toyota ? VehicleModel::where('vehicle_make_id', $toyota->id)->where('name', 'Corolla')->first() : null;
         $hilux = $toyota ? VehicleModel::where('vehicle_make_id', $toyota->id)->where('name', 'Hilux')->first() : null;
@@ -36,49 +32,46 @@ class ProductSeeder extends Seeder
         $samples = [
             [
                 'part_number' => 'OIL-FIL-TYT-001',
-                'name' => 'Oil Filter — Toyota Corolla',
+                'name' => 'Oil Filter',
                 'product_name_id' => $oilFilter?->id,
                 'vehicle_make_id' => $toyota?->id,
                 'vehicle_model_id' => $corolla?->id,
                 'category_id' => $filters?->id ?? $engine?->id,
                 'unit_id' => $pcs?->id,
-                'supplier_id' => $agl?->id,
                 'cost_price' => 450.00,
-                'selling_price' => 750.00,
+                'min_selling_price' => 700.00,
+                'max_selling_price' => 800.00,
                 'reorder_level' => 10,
-                'barcode' => '8901234567001',
                 'description' => 'Genuine-spec oil filter for Toyota Corolla.',
                 'fitment' => [$rav4?->id],
             ],
             [
                 'part_number' => 'BRK-PAD-TYT-001',
-                'name' => 'Front Brake Pad Set — Toyota Hilux',
+                'name' => 'Brake Pad',
                 'product_name_id' => $brakePad?->id,
                 'vehicle_make_id' => $toyota?->id,
                 'vehicle_model_id' => $hilux?->id,
                 'category_id' => $engine?->id,
                 'unit_id' => $set?->id,
-                'supplier_id' => $nms?->id,
                 'cost_price' => 3200.00,
-                'selling_price' => 4800.00,
+                'min_selling_price' => 4500.00,
+                'max_selling_price' => 5100.00,
                 'reorder_level' => 5,
-                'barcode' => '8901234567002',
                 'description' => 'Ceramic front brake pad set.',
                 'fitment' => [],
             ],
             [
                 'part_number' => 'AIR-FIL-UNI-001',
-                'name' => 'Universal Air Filter — Panel Type',
+                'name' => 'Air Filter',
                 'product_name_id' => $airFilter?->id,
                 'vehicle_make_id' => null,
                 'vehicle_model_id' => null,
                 'category_id' => $filters?->id ?? $engine?->id,
                 'unit_id' => $pcs?->id,
-                'supplier_id' => $agl?->id,
                 'cost_price' => 280.00,
-                'selling_price' => 450.00,
+                'min_selling_price' => 400.00,
+                'max_selling_price' => 500.00,
                 'reorder_level' => 20,
-                'barcode' => null,
                 'description' => 'Universal panel air filter — trim to fit.',
                 'fitment' => array_filter([$corolla?->id, $rav4?->id]),
             ],

@@ -8,7 +8,7 @@
         subtitle="Add a unit of measure for products and stock."
         icon="fa-ruler-combined"
         card-title="Unit Details"
-        :back-url="route('units.index')"
+        :back-url="route('product-catalog.index', ['view' => 'units'])"
         :action="route('units.store')"
         method="POST"
         submit-label="Create Unit"

@@ -7,7 +7,6 @@ use App\Http\Requests\UpdateProductRequest;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductName;
-use App\Models\Supplier;
 use App\Models\Unit;
 use App\Models\VehicleMake;
 use Illuminate\Http\JsonResponse;
@@ -28,16 +27,15 @@ class ProductController extends Controller
     public function index(Request $request): View
     {
         $products = Product::query()
-            ->with(['category', 'unit', 'vehicleMake', 'supplier'])
+            ->with(['category', 'unit', 'vehicleMake', 'productName'])
             ->search($request->search)
             ->when($request->status === 'active', fn ($q) => $q->where('is_active', true))
             ->when($request->status === 'inactive', fn ($q) => $q->where('is_active', false))
             ->when($request->category_id, fn ($q) => $q->where('category_id', $request->category_id))
-            ->when($request->supplier_id, fn ($q) => $q->where('supplier_id', $request->supplier_id))
             ->when($request->vehicle_make_id, fn ($q) => $q->where('vehicle_make_id', $request->vehicle_make_id))
             ->when($request->sort === 'part_number', fn ($q) => $q->orderBy('part_number'))
             ->when($request->sort === 'name', fn ($q) => $q->orderBy('name'))
-            ->when($request->sort === 'price', fn ($q) => $q->orderByDesc('selling_price'))
+            ->when($request->sort === 'price', fn ($q) => $q->orderByDesc('min_selling_price'))
             ->when($request->sort === 'oldest', fn ($q) => $q->oldest())
             ->when(! in_array($request->sort, ['part_number', 'name', 'price', 'oldest'], true), fn ($q) => $q->latest())
             ->paginate(15)
@@ -47,14 +45,13 @@ class ProductController extends Controller
             'total' => Product::count(),
             'active' => Product::where('is_active', true)->count(),
             'inactive' => Product::where('is_active', false)->count(),
-            'with_barcode' => Product::whereNotNull('barcode')->where('barcode', '!=', '')->count(),
+            'priced' => Product::where('min_selling_price', '>', 0)->count(),
         ];
 
         $categories = Category::active()->with('parent')->orderBy('name')->get();
-        $suppliers = Supplier::active()->orderBy('name')->get(['id', 'name', 'code']);
         $makes = VehicleMake::active()->orderBy('name')->get(['id', 'name']);
 
-        return view('products.index', compact('products', 'stats', 'categories', 'suppliers', 'makes'));
+        return view('products.index', compact('products', 'stats', 'categories', 'makes'));
     }
 
     public function create(): View
@@ -78,7 +75,6 @@ class ProductController extends Controller
             'vehicleModel',
             'category.parent',
             'unit',
-            'supplier',
             'fitmentModels.make',
         ]);
 
@@ -119,8 +115,8 @@ class ProductController extends Controller
             ->orderBy('name')
             ->limit(20)
             ->get([
-                'id', 'part_number', 'name', 'barcode',
-                'selling_price', 'unit_id', 'category_id',
+                'id', 'part_number', 'name',
+                'min_selling_price', 'max_selling_price', 'unit_id', 'category_id',
             ]);
 
         return response()->json($products);
@@ -148,7 +144,6 @@ class ProductController extends Controller
             'allModels' => $allModels,
             'categories' => Category::active()->with('parent')->orderBy('name')->get(),
             'units' => Unit::active()->orderBy('name')->get(),
-            'suppliers' => Supplier::active()->orderBy('name')->get(),
         ];
     }
 
@@ -162,11 +157,10 @@ class ProductController extends Controller
             'vehicle_model_id' => $request->vehicle_model_id,
             'category_id' => $request->category_id,
             'unit_id' => $request->unit_id,
-            'supplier_id' => $request->supplier_id,
             'cost_price' => $request->cost_price ?? 0,
-            'selling_price' => $request->selling_price ?? 0,
+            'min_selling_price' => $request->min_selling_price ?? 0,
+            'max_selling_price' => $request->max_selling_price ?? 0,
             'reorder_level' => $request->reorder_level ?? 0,
-            'barcode' => $request->filled('barcode') ? trim($request->barcode) : null,
             'description' => $request->description,
             'is_active' => $request->boolean('is_active'),
         ];

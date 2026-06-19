@@ -59,6 +59,7 @@ class RoleSeeder extends Seeder
         $shopManager = Role::firstOrCreate(['name' => 'Shop Manager', 'guard_name' => 'web']);
         $shopManager->syncPermissions([
             'dashboard.view',
+            'shops.view',
             'products.view',
             'inventory.view',
             'sales.view', 'sales.create', 'sales.hold',

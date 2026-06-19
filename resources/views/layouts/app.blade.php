@@ -222,41 +222,81 @@
             </a>
 
             <p class="sb-section">Operations</p>
-            @foreach ([
-                ['fa-cash-register', 'text-orange-400',  'Point of Sale'],
-                ['fa-boxes-stacked', 'text-violet-400',  'Inventory'],
-                ['fa-right-left',    'text-teal-400',    'Transfers'],
-                ['fa-rotate-left',   'text-rose-400',    'Returns'],
-            ] as [$ico, $col, $lbl])
-                <span class="sb-link cursor-not-allowed opacity-50">
-                    <i class="fas {{ $ico }} w-4 text-center {{ $col }}"></i>
-                    {{ $lbl }}
-                    <span class="ml-auto rounded px-1.5 py-0.5 text-[.52rem] font-bold uppercase tracking-wide text-zinc-600"
-                          style="background:rgba(255,255,255,.06)">soon</span>
-                </span>
-            @endforeach
+            @can('approvals.act')
+                <a href="{{ route('approvals.index') }}" class="sb-link {{ request()->routeIs('approvals.*') ? 'active' : '' }}">
+                    <i class="fas fa-clipboard-check w-4 text-center text-sky-400"></i>
+                    Approvals
+                    @if (($pendingApprovalCount ?? 0) > 0)
+                        <span class="ml-auto rounded-full bg-orange-500 px-1.5 py-0.5 text-[.58rem] font-bold text-white">
+                            {{ $pendingApprovalCount > 99 ? '99+' : $pendingApprovalCount }}
+                        </span>
+                    @endif
+                </a>
+            @endcan
+            @can('inventory.view')
+                <a href="{{ route('inventory.index') }}" class="sb-link {{ request()->routeIs('inventory.*') ? 'active' : '' }}">
+                    <i class="fas fa-boxes-stacked w-4 text-center text-violet-400"></i> Inventory
+                </a>
+            @endcan
+            @can('transfers.view')
+                <a href="{{ route('transfer-requests.index') }}" class="sb-link {{ request()->routeIs('transfer-requests.*') ? 'active' : '' }}">
+                    <i class="fas fa-right-left w-4 text-center text-teal-400"></i> Transfer Requests
+                </a>
+                <a href="{{ route('stock-transfers.index') }}" class="sb-link {{ request()->routeIs('stock-transfers.*') ? 'active' : '' }}">
+                    <i class="fas fa-truck w-4 text-center text-teal-300"></i> Stock Transfers
+                </a>
+            @endcan
+            @can('sales.view')
+                <a href="{{ route('sales.index') }}" class="sb-link {{ request()->routeIs('sales.index', 'sales.show') ? 'active' : '' }}">
+                    <i class="fas fa-receipt w-4 text-center text-orange-300"></i> Sales
+                </a>
+            @endcan
+            @can('sales.create')
+                <a href="{{ route('sales.pos') }}" class="sb-link {{ request()->routeIs('sales.pos', 'receipts.*') ? 'active' : '' }}">
+                    <i class="fas fa-cash-register w-4 text-center text-orange-400"></i> Point of Sale
+                </a>
+            @endcan
+            @can('returns.view')
+                <a href="{{ route('customer-returns.index') }}" class="sb-link {{ request()->routeIs('customer-returns.*') ? 'active' : '' }}">
+                    <i class="fas fa-rotate-left w-4 text-center text-rose-400"></i> Customer Returns
+                </a>
+                <a href="{{ route('supplier-returns.index') }}" class="sb-link {{ request()->routeIs('supplier-returns.*') ? 'active' : '' }}">
+                    <i class="fas fa-truck-ramp-box w-4 text-center text-rose-300"></i> Supplier Returns
+                </a>
+            @endcan
 
             <p class="sb-section">Catalog &amp; Procurement</p>
-            @foreach ([
-                ['fa-car-side',            'text-orange-300',  'Products'],
-                ['fa-truck',               'text-emerald-400', 'Suppliers'],
-                ['fa-file-invoice-dollar', 'text-amber-400',   'Procurement'],
-            ] as [$ico, $col, $lbl])
-                <span class="sb-link cursor-not-allowed opacity-50">
-                    <i class="fas {{ $ico }} w-4 text-center {{ $col }}"></i>
-                    {{ $lbl }}
-                    <span class="ml-auto rounded px-1.5 py-0.5 text-[.52rem] font-bold uppercase tracking-wide text-zinc-600"
-                          style="background:rgba(255,255,255,.06)">soon</span>
-                </span>
-            @endforeach
+            @can('products.view')
+                <a href="{{ route('products.index') }}" class="sb-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
+                    <i class="fas fa-car-side w-4 text-center text-orange-300"></i> Products
+                </a>
+            @endcan
+            @can('suppliers.view')
+                <a href="{{ route('suppliers.index') }}" class="sb-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}">
+                    <i class="fas fa-truck w-4 text-center text-emerald-400"></i> Suppliers
+                </a>
+            @endcan
+            @can('procurement.view')
+                <a href="{{ route('procurement.folders.index') }}" class="sb-link {{ request()->routeIs('procurement.*', 'purchase-orders.*', 'goods-receipts.*') ? 'active' : '' }}">
+                    <i class="fas fa-folder-open w-4 text-center text-amber-400"></i> Procurement Folders
+                </a>
+                <a href="{{ route('purchase-orders.index') }}" class="sb-link {{ request()->routeIs('purchase-orders.*', 'goods-receipts.*') ? 'active' : '' }}">
+                    <i class="fas fa-file-invoice-dollar w-4 text-center text-amber-300"></i> Purchase Orders
+                </a>
+            @endcan
 
             <p class="sb-section">Insights</p>
-            <span class="sb-link cursor-not-allowed opacity-50">
-                <i class="fas fa-chart-line w-4 text-center text-pink-400"></i>
-                Reports
-                <span class="ml-auto rounded px-1.5 py-0.5 text-[.52rem] font-bold uppercase tracking-wide text-zinc-600"
-                      style="background:rgba(255,255,255,.06)">soon</span>
-            </span>
+            @can('reports.view')
+                <a href="{{ route('reports.index') }}" class="sb-link {{ request()->routeIs('reports.*') ? 'active' : '' }}">
+                    <i class="fas fa-chart-line w-4 text-center text-pink-400"></i> Reports
+                </a>
+            @endcan
+
+            @can('audit.view')
+                <a href="{{ route('audit-logs.index') }}" class="sb-link {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}">
+                    <i class="fas fa-shield-halved w-4 text-center text-slate-400"></i> Audit Log
+                </a>
+            @endcan
 
             @canany(['warehouses.view', 'shops.view', 'suppliers.view', 'master-data.view'])
                 <p class="sb-section">Master Data</p>
@@ -276,11 +316,11 @@
                     </a>
                 @endcan
                 @can('master-data.view')
-                    <a href="{{ route('vehicle-makes.index') }}" class="sb-link {{ request()->routeIs('vehicle-makes.*') ? 'active' : '' }}">
-                        <i class="fas fa-car-side w-4 text-center text-orange-400"></i> Vehicle Makes
+                    <a href="{{ route('vehicle-catalog.index') }}" class="sb-link {{ request()->routeIs('vehicle-catalog.*', 'vehicle-makes.*', 'vehicle-models.*') ? 'active' : '' }}">
+                        <i class="fas fa-car-side w-4 text-center text-orange-400"></i> Vehicle Makes & Models
                     </a>
-                    <a href="{{ route('vehicle-models.index') }}" class="sb-link {{ request()->routeIs('vehicle-models.*') ? 'active' : '' }}">
-                        <i class="fas fa-car w-4 text-center text-orange-400"></i> Vehicle Models
+                    <a href="{{ route('product-catalog.index') }}" class="sb-link {{ request()->routeIs('product-catalog.*', 'categories.*', 'product-names.*', 'units.*') ? 'active' : '' }}">
+                        <i class="fas fa-tags w-4 text-center text-orange-400"></i> Categories, Names & Units
                     </a>
                 @endcan
             @endcanany

@@ -6,7 +6,7 @@
             <i class="fas fa-car-side"></i> What is a product?
         </h3>
         <p class="mi-guide-text">
-            A product is a sellable part in your catalogue — identified by part number and optionally barcode. It links to category, unit, supplier, and vehicle fitment.
+            A product is a sellable part in your catalogue — identified by part number and linked to a product name, category, unit, and vehicle fitment.
         </p>
     </section>
 
@@ -16,9 +16,10 @@
         </h3>
         <ul class="mi-guide-list">
             <li><strong>Part number</strong><span>Unique code — uppercase recommended (e.g. OIL-FIL-TYT-001).</span></li>
+            <li><strong>Product name</strong><span>Lookup from your product names catalogue — used as the display label.</span></li>
             <li><strong>Primary fitment</strong><span>Main make/model this part is listed under.</span></li>
-            <li><strong>Additional fitment</strong><span>Extra models the same part fits via the compatibility pivot.</span></li>
-            <li><strong>Prices</strong><span>Cost and selling price — updated automatically on goods receipt later.</span></li>
+            <li><strong>Additional fitment</strong><span>Optional toggle — expand to pick extra compatible models.</span></li>
+            <li><strong>Prices</strong><span>Min and max selling price — POS defaults to max; cost updates on goods receipt.</span></li>
             <li><strong>Reorder level</strong><span>Triggers low-stock alerts once inventory is live.</span></li>
         </ul>
     </section>
@@ -29,7 +30,7 @@
         </h3>
         <ul class="mi-guide-tips">
             <li><i class="fas fa-check"></i> Use a consistent part-number pattern: TYPE-MAKE-MODEL-SEQ.</li>
-            <li><i class="fas fa-check"></i> Assign a barcode for faster POS scanning.</li>
+            <li><i class="fas fa-check"></i> Set a realistic min–max range for negotiated counter sales.</li>
             <li><i class="fas fa-check"></i> Deactivate discontinued parts instead of deleting them.</li>
         </ul>
     </section>

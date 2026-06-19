@@ -8,7 +8,7 @@
         :subtitle="$category->name"
         icon="fa-folder-tree"
         card-title="Category Details"
-        :back-url="route('categories.index')"
+        :back-url="route('product-catalog.index', ['view' => 'categories'])"
         :action="route('categories.update', $category)"
         method="PUT"
         submit-label="Save Changes"

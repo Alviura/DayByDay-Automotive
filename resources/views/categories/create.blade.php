@@ -8,7 +8,7 @@
         subtitle="Add a category or sub-category to organise products."
         icon="fa-folder-tree"
         card-title="Category Details"
-        :back-url="route('categories.index')"
+        :back-url="route('product-catalog.index', ['view' => 'categories'])"
         :action="route('categories.store')"
         method="POST"
         submit-label="Create Category"

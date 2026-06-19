@@ -13,7 +13,7 @@
                 </div>
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <h1 class="text-[1.35rem] font-bold text-gray-900 leading-tight">{{ $product->name }}</h1>
+                        <h1 class="text-[1.35rem] font-bold text-gray-900 leading-tight">{{ $product->productName?->name ?? $product->name }}</h1>
                         @if ($product->is_active)
                             <span class="mi-status-active">Active</span>
                         @else
@@ -25,12 +25,6 @@
                             <i class="fas fa-barcode text-[0.55rem]"></i>
                             {{ $product->part_number }}
                         </span>
-                        @if ($product->barcode)
-                            <span class="mi-cat-badge">
-                                <i class="fas fa-qrcode text-[0.55rem]"></i>
-                                {{ $product->barcode }}
-                            </span>
-                        @endif
                     </p>
                 </div>
             </div>
@@ -51,10 +45,17 @@
         <div class="mi-kpi-row">
             <div class="mi-kpi mi-kpi-green">
                 <div>
-                    <p class="mi-kpi-label">Selling Price</p>
-                    <p class="mi-kpi-value text-status">{{ number_format($product->selling_price, 2) }}</p>
+                    <p class="mi-kpi-label">Min Selling Price</p>
+                    <p class="mi-kpi-value text-status">{{ number_format($product->min_selling_price, 2) }}</p>
                 </div>
                 <div class="mi-kpi-icon"><i class="fas fa-tag"></i></div>
+            </div>
+            <div class="mi-kpi mi-kpi-green">
+                <div>
+                    <p class="mi-kpi-label">Max Selling Price</p>
+                    <p class="mi-kpi-value text-status">{{ number_format($product->max_selling_price, 2) }}</p>
+                </div>
+                <div class="mi-kpi-icon"><i class="fas fa-tags"></i></div>
             </div>
             <div class="mi-kpi mi-kpi-purple">
                 <div>
@@ -62,18 +63,6 @@
                     <p class="mi-kpi-value text-status">{{ number_format($product->cost_price, 2) }}</p>
                 </div>
                 <div class="mi-kpi-icon"><i class="fas fa-coins"></i></div>
-            </div>
-            <div class="mi-kpi mi-kpi-amber">
-                <div>
-                    <p class="mi-kpi-label">Margin</p>
-                    @php
-                        $margin = $product->selling_price > 0
-                            ? (($product->selling_price - $product->cost_price) / $product->selling_price) * 100
-                            : 0;
-                    @endphp
-                    <p class="mi-kpi-value">{{ number_format($margin, 1) }}%</p>
-                </div>
-                <div class="mi-kpi-icon"><i class="fas fa-chart-line"></i></div>
             </div>
             <div class="mi-kpi mi-kpi-orange">
                 <div>
@@ -116,16 +105,12 @@
                                 <dd class="mi-detail-value"><span class="mi-cat-badge">{{ $product->part_number }}</span></dd>
                             </div>
                             <div class="mi-detail-item">
-                                <dt class="mi-detail-label"><i class="fas fa-box"></i> Display Name</dt>
-                                <dd class="mi-detail-value">{{ $product->name }}</dd>
-                            </div>
-                            <div class="mi-detail-item">
                                 <dt class="mi-detail-label"><i class="fas fa-tags"></i> Product Name</dt>
                                 <dd class="mi-detail-value">{{ $product->productName?->name ?? '—' }}</dd>
                             </div>
                             <div class="mi-detail-item">
-                                <dt class="mi-detail-label"><i class="fas fa-qrcode"></i> Barcode</dt>
-                                <dd class="mi-detail-value">{{ $product->barcode ?? '—' }}</dd>
+                                <dt class="mi-detail-label"><i class="fas fa-tag"></i> Selling Price Range</dt>
+                                <dd class="mi-detail-value">{{ $product->sellingPriceLabel() }}</dd>
                             </div>
                             <div class="mi-detail-item">
                                 <dt class="mi-detail-label"><i class="fas fa-folder-tree"></i> Category</dt>
@@ -142,18 +127,6 @@
                                 <dd class="mi-detail-value">
                                     @if ($product->unit)
                                         {{ $product->unit->name }}{{ $product->unit->abbreviation ? ' ('.$product->unit->abbreviation.')' : '' }}
-                                    @else
-                                        —
-                                    @endif
-                                </dd>
-                            </div>
-                            <div class="mi-detail-item">
-                                <dt class="mi-detail-label"><i class="fas fa-truck"></i> Default Supplier</dt>
-                                <dd class="mi-detail-value">
-                                    @if ($product->supplier)
-                                        <a href="{{ route('suppliers.show', $product->supplier) }}" class="text-orange-600 hover:text-orange-700">
-                                            {{ $product->supplier->name }}
-                                        </a>
                                     @else
                                         —
                                     @endif

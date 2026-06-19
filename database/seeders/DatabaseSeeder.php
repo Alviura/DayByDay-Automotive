@@ -16,6 +16,20 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             AdminUserSeeder::class,
             WarehouseSeeder::class,
+            ShopSeeder::class,
+            SupplierSeeder::class,
+            VehicleMakeSeeder::class,
+            CategorySeeder::class,
+            ProductNameSeeder::class,
+            UnitSeeder::class,
+            ProductSeeder::class,
+            ApprovalSeeder::class,
+            InventorySeeder::class,
+            ProcurementSeeder::class,
+            TransferSeeder::class,
+            SaleSeeder::class,
+            ReturnSeeder::class,
+            AuditLogSeeder::class,
         ]);
     }
 }

@@ -20,11 +20,10 @@ class Product extends Model
         'vehicle_model_id',
         'category_id',
         'unit_id',
-        'supplier_id',
         'cost_price',
-        'selling_price',
+        'min_selling_price',
+        'max_selling_price',
         'reorder_level',
-        'barcode',
         'description',
         'is_active',
     ];
@@ -32,7 +31,8 @@ class Product extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'cost_price' => 'decimal:2',
-        'selling_price' => 'decimal:2',
+        'min_selling_price' => 'decimal:2',
+        'max_selling_price' => 'decimal:2',
         'reorder_level' => 'integer',
     ];
 
@@ -61,11 +61,6 @@ class Product extends Model
         return $this->belongsTo(Unit::class);
     }
 
-    public function supplier(): BelongsTo
-    {
-        return $this->belongsTo(Supplier::class);
-    }
-
     public function fitmentModels(): BelongsToMany
     {
         return $this->belongsToMany(VehicleModel::class, 'product_vehicle_model');
@@ -85,7 +80,23 @@ class Product extends Model
         return $query->where(function ($q) use ($term) {
             $q->where('part_number', 'like', "%{$term}%")
                 ->orWhere('name', 'like', "%{$term}%")
-                ->orWhere('barcode', 'like', "%{$term}%");
+                ->orWhereHas('productName', fn ($pn) => $pn->where('name', 'like', "%{$term}%"));
         });
+    }
+
+    public function sellingPriceLabel(): string
+    {
+        $min = (float) $this->min_selling_price;
+        $max = (float) $this->max_selling_price;
+
+        if ($min <= 0 && $max <= 0) {
+            return '—';
+        }
+
+        if ($min === $max) {
+            return number_format($min, 2);
+        }
+
+        return number_format($min, 2).' – '.number_format($max, 2);
     }
 }

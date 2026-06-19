@@ -144,7 +144,7 @@ reporting/audit/notifications/dashboard consume everything else, so they come la
 - **Depends on:** M2
 
 ## M10. Products (Spec §3)
-- **Models:** `Product` (belongsTo productName, vehicleMake, vehicleModel, category, unit, supplier; belongsToMany vehicleModels via `product_vehicle_model`; morphMany stock; hasMany ledger entries)
+- **Models:** `Product` (belongsTo productName, vehicleMake, vehicleModel, category, unit; belongsToMany vehicleModels via `product_vehicle_model`; morphMany stock; hasMany ledger entries)
 - **Requests:** `StoreProductRequest`, `UpdateProductRequest`
 - **Controller:** `ProductController` (resource) + `show` (stock balances, movement, procurement history tabs), product search endpoint for POS
 - **Views:** `products/{index,create,edit,show}`

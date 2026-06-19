@@ -117,11 +117,10 @@ erDiagram
         bigint vehicle_model_id FK
         bigint category_id FK
         bigint unit_id FK
-        bigint supplier_id FK
         decimal cost_price
-        decimal selling_price
+        decimal min_selling_price
+        decimal max_selling_price
         int reorder_level
-        string barcode UK
         text description
         boolean is_active
         datetime deleted_at

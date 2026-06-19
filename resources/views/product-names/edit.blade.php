@@ -8,7 +8,7 @@
         :subtitle="$productName->name"
         icon="fa-tags"
         card-title="Product Name Details"
-        :back-url="route('product-names.index')"
+        :back-url="route('product-catalog.index', ['view' => 'names'])"
         :action="route('product-names.update', $productName)"
         method="PUT"
         submit-label="Save Changes"

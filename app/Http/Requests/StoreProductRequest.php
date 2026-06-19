@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\ProductName;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,8 +17,8 @@ class StoreProductRequest extends FormRequest
     {
         return [
             'part_number' => ['required', 'string', 'max:50', 'unique:products,part_number'],
-            'name' => ['required', 'string', 'max:255'],
-            'product_name_id' => ['nullable', 'exists:product_names,id'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'product_name_id' => ['required', 'exists:product_names,id'],
             'vehicle_make_id' => ['nullable', 'exists:vehicle_makes,id'],
             'vehicle_model_id' => array_filter([
                 'nullable',
@@ -27,11 +28,10 @@ class StoreProductRequest extends FormRequest
             ]),
             'category_id' => ['nullable', 'exists:categories,id'],
             'unit_id' => ['nullable', 'exists:units,id'],
-            'supplier_id' => ['nullable', 'exists:suppliers,id'],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
-            'selling_price' => ['nullable', 'numeric', 'min:0'],
+            'min_selling_price' => ['nullable', 'numeric', 'min:0'],
+            'max_selling_price' => ['nullable', 'numeric', 'min:0', 'gte:min_selling_price'],
             'reorder_level' => ['nullable', 'integer', 'min:0'],
-            'barcode' => ['nullable', 'string', 'max:50', 'unique:products,barcode'],
             'description' => ['nullable', 'string', 'max:2000'],
             'is_active' => ['boolean'],
             'vehicle_model_ids' => ['nullable', 'array'],
@@ -43,6 +43,13 @@ class StoreProductRequest extends FormRequest
     {
         if (! $this->vehicle_make_id) {
             $this->merge(['vehicle_model_id' => null]);
+        }
+
+        if ($this->product_name_id) {
+            $productName = ProductName::find($this->product_name_id);
+            if ($productName) {
+                $this->merge(['name' => $productName->name]);
+            }
         }
     }
 }

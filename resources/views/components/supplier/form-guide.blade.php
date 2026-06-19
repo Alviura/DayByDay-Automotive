@@ -6,7 +6,7 @@
             <i class="fas fa-truck"></i> What is a supplier?
         </h3>
         <p class="mi-guide-text">
-            A supplier is a vendor you purchase parts from. Supplier records feed into products, procurement folders, and purchase orders.
+            A supplier is a vendor you purchase parts from. Supplier records feed into procurement folders and purchase orders.
         </p>
     </section>
 
@@ -38,12 +38,12 @@
     @if ($isEdit)
         <div class="mi-guide-note mi-guide-note-amber">
             <i class="fas fa-triangle-exclamation"></i>
-            <p>Saving changes updates this supplier across linked products and procurement.</p>
+            <p>Saving changes updates this supplier across linked procurement records.</p>
         </div>
     @else
         <div class="mi-guide-note mi-guide-note-blue">
             <i class="fas fa-arrow-right"></i>
-            <p>After creating, link products to this supplier when building your catalogue.</p>
+            <p>After creating, use this supplier when raising procurement folders and purchase orders.</p>
         </div>
     @endif
 </x-module.form-guide>

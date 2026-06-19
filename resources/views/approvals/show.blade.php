@@ -88,6 +88,52 @@
                             <dt class="mi-detail-label"><i class="fas fa-align-left"></i> Summary</dt>
                             <dd class="mi-detail-value">{{ $approval->documentSummary() }}</dd>
                         </div>
+                        @if ($approval->approvable instanceof \App\Models\StockAdjustment)
+                            <div class="mi-detail-item">
+                                <dt class="mi-detail-label"><i class="fas fa-sliders"></i> Source Document</dt>
+                                <dd class="mi-detail-value">
+                                    <a href="{{ route('stock-adjustments.show', $approval->approvable) }}" class="text-orange-600 hover:text-orange-700">
+                                        View adjustment {{ $approval->approvable->adjustment_number }}
+                                    </a>
+                                </dd>
+                            </div>
+                        @endif
+                        @if ($approval->approvable instanceof \App\Models\ProcurementFolder)
+                            <div class="mi-detail-item">
+                                <dt class="mi-detail-label"><i class="fas fa-folder-open"></i> Source Document</dt>
+                                <dd class="mi-detail-value">
+                                    <a href="{{ route('procurement.folders.show', $approval->approvable) }}" class="text-orange-600 hover:text-orange-700">
+                                        View folder {{ $approval->approvable->folder_number }}
+                                    </a>
+                                </dd>
+                            </div>
+                        @endif
+                        @if ($approval->approvable instanceof \App\Models\TransferRequest)
+                            <div class="mi-detail-item">
+                                <dt class="mi-detail-label"><i class="fas fa-right-left"></i> Source Document</dt>
+                                <dd class="mi-detail-value">
+                                    <a href="{{ route('transfer-requests.show', $approval->approvable) }}" class="text-orange-600 hover:text-orange-700">
+                                        View transfer {{ $approval->approvable->request_number }}
+                                    </a>
+                                </dd>
+                            </div>
+                        @endif
+                        @if ($approval->approvable instanceof \App\Models\ReturnRecord)
+                            <div class="mi-detail-item">
+                                <dt class="mi-detail-label"><i class="fas fa-rotate-left"></i> Source Document</dt>
+                                <dd class="mi-detail-value">
+                                    @if ($approval->approvable->type === 'customer')
+                                        <a href="{{ route('customer-returns.show', $approval->approvable) }}" class="text-orange-600 hover:text-orange-700">
+                                            View return {{ $approval->approvable->return_number }}
+                                        </a>
+                                    @else
+                                        <a href="{{ route('supplier-returns.show', $approval->approvable) }}" class="text-orange-600 hover:text-orange-700">
+                                            View return {{ $approval->approvable->return_number }}
+                                        </a>
+                                    @endif
+                                </dd>
+                            </div>
+                        @endif
                         @if ($approval->notes)
                             <div class="mi-detail-item mi-span-full">
                                 <dt class="mi-detail-label"><i class="fas fa-note-sticky"></i> Submission Notes</dt>

@@ -58,6 +58,10 @@ return [
 
     'module_models' => [
         'demonstration' => \App\Models\ApprovalDemonstration::class,
+        'adjustment' => \App\Models\StockAdjustment::class,
+        'procurement' => \App\Models\ProcurementFolder::class,
+        'transfer' => \App\Models\TransferRequest::class,
+        'return' => \App\Models\ReturnRecord::class,
     ],
 
 ];

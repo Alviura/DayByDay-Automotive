@@ -13,42 +13,7 @@ class CategoryController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('permission:master-data.view')->only(['index']);
         $this->middleware('permission:master-data.manage')->only(['create', 'store', 'edit', 'update', 'destroy']);
-    }
-
-    public function index(Request $request): View
-    {
-        $categories = Category::query()
-            ->with('parent')
-            ->withCount('children')
-            ->search($request->search)
-            ->when($request->status === 'active', fn ($q) => $q->where('is_active', true))
-            ->when($request->status === 'inactive', fn ($q) => $q->where('is_active', false))
-            ->when($request->parent_id === 'root', fn ($q) => $q->whereNull('parent_id'))
-            ->when($request->parent_id && $request->parent_id !== 'root', fn ($q) => $q->where('parent_id', $request->parent_id))
-            ->when($request->sort === 'name', fn ($q) => $q->orderBy('name'))
-            ->when($request->sort === 'children', fn ($q) => $q->orderByDesc('children_count'))
-            ->when($request->sort === 'oldest', fn ($q) => $q->oldest())
-            ->when(! in_array($request->sort, ['name', 'children', 'oldest'], true), fn ($q) => $q->latest())
-            ->paginate(15)
-            ->withQueryString();
-
-        $tree = Category::with(['children' => fn ($q) => $q->with('children')->orderBy('name')])
-            ->roots()
-            ->orderBy('name')
-            ->get();
-
-        $stats = [
-            'total' => Category::count(),
-            'active' => Category::where('is_active', true)->count(),
-            'inactive' => Category::where('is_active', false)->count(),
-            'top_level' => Category::whereNull('parent_id')->count(),
-        ];
-
-        $parents = Category::orderBy('name')->pluck('name', 'id');
-
-        return view('categories.index', compact('categories', 'tree', 'stats', 'parents'));
     }
 
     public function create(Request $request): View
@@ -67,7 +32,8 @@ class CategoryController extends Controller
             'is_active' => $request->boolean('is_active'),
         ]);
 
-        return redirect()->route('categories.index')->with('status', 'Category created successfully.');
+        return redirect()->route('product-catalog.index', ['view' => 'categories'])
+            ->with('status', 'Category created successfully.');
     }
 
     public function edit(Category $category): View
@@ -85,7 +51,8 @@ class CategoryController extends Controller
             'is_active' => $request->boolean('is_active'),
         ]);
 
-        return redirect()->route('categories.index')->with('status', 'Category updated successfully.');
+        return redirect()->route('product-catalog.index', ['view' => 'categories'])
+            ->with('status', 'Category updated successfully.');
     }
 
     public function destroy(Category $category): RedirectResponse
@@ -96,7 +63,8 @@ class CategoryController extends Controller
 
         $category->delete();
 
-        return redirect()->route('categories.index')->with('status', 'Category deleted successfully.');
+        return redirect()->route('product-catalog.index', ['view' => 'categories'])
+            ->with('status', 'Category deleted successfully.');
     }
 
     private function parentOptions(?Category $exclude = null)

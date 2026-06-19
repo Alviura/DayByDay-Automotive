@@ -8,7 +8,7 @@
         subtitle="Add a generic part type name for the product catalogue."
         icon="fa-tags"
         card-title="Product Name Details"
-        :back-url="route('product-names.index')"
+        :back-url="route('product-catalog.index', ['view' => 'names'])"
         :action="route('product-names.store')"
         method="POST"
         submit-label="Create Product Name"

@@ -5,7 +5,7 @@
 
     <x-module.form-page
         title="New Product"
-        subtitle="Add a part to the catalogue with fitment, pricing, and supplier links."
+        subtitle="Add a part to the catalogue with fitment and pricing."
         icon="fa-car-side"
         card-title="Product Details"
         :back-url="route('products.index')"
@@ -20,7 +20,6 @@
             :all-models="$allModels"
             :categories="$categories"
             :units="$units"
-            :suppliers="$suppliers"
         />
 
         <x-slot:guide>

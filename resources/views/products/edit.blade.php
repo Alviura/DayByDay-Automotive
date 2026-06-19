@@ -22,7 +22,6 @@
             :all-models="$allModels"
             :categories="$categories"
             :units="$units"
-            :suppliers="$suppliers"
         />
 
         <x-slot:guide>

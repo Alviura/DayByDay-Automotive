@@ -432,4 +432,90 @@
         justify-content: center;
     }
     .mi-btn-danger:hover { background: #fef2f2; border-color: #fca5a5; }
+
+    /* ── Category tree ── */
+    .mi-tree-wrap { padding: 1.15rem var(--mi-card-px) 1.35rem; }
+    .mi-tree-node { margin-bottom: .4rem; }
+    .mi-tree-node-inner {
+        display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+        padding: .7rem 1rem;
+        border: 1px solid #f0f0f0; border-radius: 10px; background: #fff;
+        transition: box-shadow .15s;
+    }
+    .mi-tree-node-inner:hover { box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+
+    /* ── Show page tabs ── */
+    .mi-tab-bar {
+        display: flex; flex-wrap: wrap; gap: .35rem;
+        padding: .35rem; background: #fff;
+        border: 1px solid #f0f0f0; border-radius: 12px;
+        box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    }
+    .mi-tab-bar button,
+    .mi-tab-bar a {
+        display: inline-flex; align-items: center; gap: .4rem;
+        padding: .55rem 1rem; border-radius: 9px;
+        font-size: .8rem; font-weight: 600; color: #6b7280;
+        background: transparent; border: none; cursor: pointer;
+        transition: background .15s, color .15s;
+        text-decoration: none;
+    }
+    .mi-tab-bar button:hover,
+    .mi-tab-bar a:hover { background: #f9fafb; color: #374151; }
+    .mi-tab-bar button.active,
+    .mi-tab-bar a.active {
+        background: #fff0eb; color: var(--mi-orange);
+        box-shadow: inset 0 0 0 1px rgba(255,107,53,.25);
+    }
+    .mi-tab-bar button i,
+    .mi-tab-bar a i { font-size: .72rem; }
+
+    /* ── Approval statuses ── */
+    .mi-status-pending {
+        display: inline-flex; align-items: center; gap: .3rem;
+        padding: .2rem .55rem; border-radius: 999px;
+        font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+        background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa;
+    }
+    .mi-status-rejected {
+        display: inline-flex; align-items: center; gap: .3rem;
+        padding: .2rem .55rem; border-radius: 999px;
+        font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+        background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;
+    }
+
+    /* ── Approval timeline ── */
+    .mi-approval-timeline { display: flex; flex-direction: column; gap: 1rem; }
+    .mi-approval-timeline-item {
+        display: grid; grid-template-columns: 2.25rem 1fr; gap: .85rem; align-items: start;
+    }
+    .mi-approval-timeline-marker {
+        width: 2.25rem; height: 2.25rem; border-radius: 999px;
+        display: flex; align-items: center; justify-content: center; font-size: .8rem;
+        background: #f3f4f6; color: #6b7280;
+    }
+    .mi-approval-timeline-green .mi-approval-timeline-marker { background: #dcfce7; color: #16a34a; }
+    .mi-approval-timeline-red .mi-approval-timeline-marker { background: #fee2e2; color: #dc2626; }
+    .mi-approval-timeline-amber .mi-approval-timeline-marker { background: #fef3c7; color: #d97706; }
+    .mi-approval-timeline-gray .mi-approval-timeline-marker { background: #f3f4f6; color: #6b7280; }
+    .mi-approval-timeline-body {
+        padding: .75rem .9rem; border: 1px solid #f0f0f0; border-radius: 10px; background: #fafafa;
+    }
+    .mi-approval-timeline-title { font-size: .84rem; font-weight: 700; color: #111827; margin: 0; }
+    .mi-approval-timeline-actor { font-size: .75rem; color: #6b7280; margin: .15rem 0 0; }
+    .mi-approval-timeline-comment { font-size: .82rem; color: #374151; margin: .5rem 0 0; line-height: 1.45; }
+
+    /* ── Approval action form ── */
+    .mi-approval-action-option {
+        display: inline-flex; align-items: center; gap: .4rem;
+        padding: .55rem .9rem; border-radius: 9px; cursor: pointer;
+        font-size: .8rem; font-weight: 600; color: #6b7280;
+        border: 1px solid #e5e7eb; background: #fff; transition: all .15s;
+    }
+    .mi-approval-action-option:hover { border-color: #fdba74; color: #c2410c; }
+    .mi-approval-action-option.active {
+        background: #fff0eb; color: var(--mi-orange);
+        border-color: rgba(255,107,53,.35);
+        box-shadow: inset 0 0 0 1px rgba(255,107,53,.15);
+    }
 </style>

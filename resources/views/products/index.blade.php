@@ -13,7 +13,7 @@
                 </div>
                 <div>
                     <h1 class="text-[1.35rem] font-bold text-gray-900 leading-tight">Product Catalogue</h1>
-                    <p class="mt-0.5 text-sm text-gray-500">Manage parts — part numbers, fitment, pricing, and barcodes.</p>
+                    <p class="mt-0.5 text-sm text-gray-500">Manage parts — part numbers, fitment, and pricing.</p>
                 </div>
             </div>
             @can('products.create')
@@ -48,10 +48,10 @@
             </div>
             <div class="mi-kpi mi-kpi-orange">
                 <div>
-                    <p class="mi-kpi-label">With Barcode</p>
-                    <p class="mi-kpi-value orange">{{ number_format($stats['with_barcode']) }}</p>
+                    <p class="mi-kpi-label">With Pricing</p>
+                    <p class="mi-kpi-value orange">{{ number_format($stats['priced']) }}</p>
                 </div>
-                <div class="mi-kpi-icon"><i class="fas fa-qrcode"></i></div>
+                <div class="mi-kpi-icon"><i class="fas fa-tag"></i></div>
             </div>
         </div>
 
@@ -74,7 +74,7 @@
                         <div class="mi-input-wrap">
                             <i class="fas fa-magnifying-glass"></i>
                             <input type="text" name="search" value="{{ request('search') }}"
-                                   placeholder="Part number, name, barcode…" class="mi-input">
+                                   placeholder="Part number or product name…" class="mi-input">
                         </div>
                     </div>
                     <div class="mi-filter-field">
@@ -92,17 +92,6 @@
                             @foreach ($categories as $category)
                                 <option value="{{ $category->id }}" @selected(request('category_id') == $category->id)>
                                     {{ $category->parent ? $category->parent->name.' › ' : '' }}{{ $category->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="mi-filter-field">
-                        <label class="mi-field-label"><i class="fas fa-truck"></i> Supplier</label>
-                        <select name="supplier_id" class="mi-select">
-                            <option value="">All suppliers</option>
-                            @foreach ($suppliers as $supplier)
-                                <option value="{{ $supplier->id }}" @selected(request('supplier_id') == $supplier->id)>
-                                    {{ $supplier->name }}
                                 </option>
                             @endforeach
                         </select>
@@ -168,7 +157,7 @@
                             <th>Name</th>
                             <th>Category</th>
                             <th>Unit</th>
-                            <th>Price</th>
+                            <th>Price Range</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -183,7 +172,7 @@
                                     </a>
                                 </td>
                                 <td>
-                                    <p class="mi-pkg-name">{{ $product->name }}</p>
+                                    <p class="mi-pkg-name">{{ $product->productName?->name ?? $product->name }}</p>
                                     @if ($product->vehicleMake)
                                         <p class="text-xs text-gray-400 mt-0.5">{{ $product->vehicleMake->name }}</p>
                                     @endif
@@ -202,7 +191,7 @@
                                         <span class="text-gray-300">—</span>
                                     @endif
                                 </td>
-                                <td class="font-medium text-gray-800">{{ number_format($product->selling_price, 2) }}</td>
+                                <td class="font-medium text-gray-800">{{ $product->sellingPriceLabel() }}</td>
                                 <td>
                                     @if ($product->is_active)
                                         <span class="mi-status-active">Active</span>
@@ -254,8 +243,8 @@
                         <div class="mi-grid-item-head">
                             <div class="min-w-0">
                                 <p class="text-xs text-gray-400 font-mono">{{ $product->part_number }}</p>
-                                <p class="mi-pkg-name truncate">{{ $product->name }}</p>
-                                <p class="text-sm font-semibold text-gray-800 mt-1">{{ number_format($product->selling_price, 2) }}</p>
+                                <p class="mi-pkg-name truncate">{{ $product->productName?->name ?? $product->name }}</p>
+                                <p class="text-sm font-semibold text-gray-800 mt-1">{{ $product->sellingPriceLabel() }}</p>
                             </div>
                             @if ($product->is_active)
                                 <span class="mi-status-active flex-shrink-0">Active</span>

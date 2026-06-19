@@ -8,7 +8,7 @@
         :subtitle="$unit->name"
         icon="fa-ruler-combined"
         card-title="Unit Details"
-        :back-url="route('units.index')"
+        :back-url="route('product-catalog.index', ['view' => 'units'])"
         :action="route('units.update', $unit)"
         method="PUT"
         submit-label="Save Changes"
