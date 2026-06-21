@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\AuditLog;
-use App\Models\ProcurementFolder;
+use App\Models\QuotationSeries;
 use App\Models\StockAdjustment;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -36,17 +36,17 @@ class AuditLogSeeder extends Seeder
             ]);
         }
 
-        $folder = ProcurementFolder::first();
-        if ($folder) {
+        $series = QuotationSeries::first();
+        if ($series) {
             AuditLog::create([
                 'user_id' => $admin->id,
                 'action' => 'updated',
-                'module' => 'procurement',
-                'auditable_type' => $folder->getMorphClass(),
-                'auditable_id' => $folder->id,
-                'reference_number' => $folder->folder_number,
+                'module' => 'quotation-series',
+                'auditable_type' => $series->getMorphClass(),
+                'auditable_id' => $series->id,
+                'reference_number' => $series->series_number,
                 'old_values' => ['status' => 'draft'],
-                'new_values' => ['status' => $folder->status],
+                'new_values' => ['status' => $series->status],
                 'ip_address' => '127.0.0.1',
             ]);
         }

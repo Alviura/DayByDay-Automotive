@@ -31,7 +31,8 @@ class AuditLog extends Model
     {
         return [
             'adjustment' => 'Stock Adjustment',
-            'procurement' => 'Procurement',
+            'quotation-series' => 'Quotation Series',
+            'procurement' => 'Quotation Series',
             'transfer' => 'Transfer',
             'sale' => 'Sale',
             'return' => 'Return',

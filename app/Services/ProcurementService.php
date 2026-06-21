@@ -2,72 +2,80 @@
 
 namespace App\Services;
 
-use App\Models\ProcurementFolder;
 use App\Models\PurchaseOrder;
+use App\Models\QuotationSeries;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class ProcurementService
 {
-    public function generatePurchaseOrder(ProcurementFolder $folder, ?User $user = null): PurchaseOrder
+    public function generatePurchaseOrder(QuotationSeries $series, ?User $user = null): PurchaseOrder
     {
-        if (! $folder->canGeneratePo()) {
-            throw new \InvalidArgumentException('This folder cannot generate a purchase order.');
+        if (! $series->canGeneratePo()) {
+            throw new \InvalidArgumentException('This quotation series cannot generate a purchase order.');
         }
 
-        $folder->load('items.product');
+        $series->load('items.product');
         $user ??= auth()->user();
 
-        return DB::transaction(function () use ($folder, $user) {
+        return DB::transaction(function () use ($series, $user) {
             $po = PurchaseOrder::create([
                 'po_number' => PurchaseOrder::generateNumber(),
-                'procurement_folder_id' => $folder->id,
-                'supplier_id' => $folder->supplier_id,
+                'quotation_series_id' => $series->id,
+                'supplier_id' => $series->supplier_id,
                 'status' => 'sent',
                 'delivery_status' => 'pending',
                 'order_date' => now()->toDateString(),
-                'expected_date' => now()->addDays($folder->supplier?->lead_time_days ?? 14)->toDateString(),
-                'currency' => $folder->currency,
-                'total' => $folder->total_landing_cost,
-                'notes' => $folder->notes,
+                'expected_date' => now()->addDays($series->supplier?->lead_time_days ?? 14)->toDateString(),
+                'currency' => $series->currency,
+                'total' => $series->total_actual_cost ?: $series->total_landing_cost,
+                'notes' => $series->notes,
                 'created_by' => $user->id,
             ]);
 
-            foreach ($folder->items as $item) {
+            foreach ($series->items as $item) {
+                $unitCost = $item->landedUnitCost() ?: (float) $item->unit_price;
+
                 $po->items()->create([
                     'product_id' => $item->product_id,
                     'quantity' => $item->quantity,
-                    'unit_cost' => $item->cost_per_unit ?: $item->unit_cost,
+                    'unit_cost' => $unitCost,
                     'received_quantity' => 0,
-                    'line_total' => $item->quantity * ($item->cost_per_unit ?: $item->unit_cost),
+                    'line_total' => (float) $item->quantity * $unitCost,
                 ]);
             }
 
-            $folder->update(['status' => 'po_generated']);
+            $series->update(['status' => 'po_generated']);
 
-            return $po->load(['items.product', 'supplier', 'folder']);
+            return $po->load(['items.product', 'supplier', 'quotationSeries']);
         });
     }
 
-    public function markInTransit(ProcurementFolder $folder): void
+    public function markInTransit(QuotationSeries $series): void
     {
-        if (! in_array($folder->status, ['po_generated', 'approved'], true)) {
-            throw new \InvalidArgumentException('Folder must have a PO before marking in transit.');
+        if ($series->status !== 'po_generated' || ! $series->purchaseOrders()->exists()) {
+            throw new \InvalidArgumentException('Generate a purchase order before marking in transit.');
         }
 
-        $folder->purchaseOrders()->update(['delivery_status' => 'in_transit', 'status' => 'sent']);
-        $folder->update(['status' => 'in_transit']);
+        $series->purchaseOrders()->update(['delivery_status' => 'in_transit', 'status' => 'sent']);
+        $series->update(['status' => 'in_transit']);
     }
 
-    public function closeFolder(ProcurementFolder $folder): void
+    public function closeSeries(QuotationSeries $series): void
     {
-        if (! in_array($folder->status, ['received', 'in_transit', 'po_generated'], true)) {
-            throw new \InvalidArgumentException('Folder cannot be closed in its current state.');
+        if (! in_array($series->status, ['received', 'in_transit', 'po_generated'], true)) {
+            throw new \InvalidArgumentException('Quotation series cannot be closed in its current state.');
         }
 
-        $folder->update([
+        $title = $series->title;
+        if ($title && ! str_contains($title, 'COMPLETED-CLOSED')) {
+            $title .= ' - COMPLETED-CLOSED';
+        }
+
+        $series->update([
             'status' => 'closed',
             'closed_at' => now(),
+            'title' => $title,
         ]);
     }
 }

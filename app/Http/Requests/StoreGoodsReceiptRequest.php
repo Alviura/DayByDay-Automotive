@@ -23,4 +23,21 @@ class StoreGoodsReceiptRequest extends FormRequest
             'items.*.unit_cost' => ['nullable', 'numeric', 'min:0'],
         ];
     }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            foreach ($this->input('items', []) as $index => $item) {
+                $received = \App\Models\GoodsReceiptNoteItem::normalizeQuantity($item['received_quantity'] ?? 0);
+                $damaged = \App\Models\GoodsReceiptNoteItem::normalizeQuantity($item['damaged_quantity'] ?? 0);
+
+                if ($damaged > $received) {
+                    $validator->errors()->add(
+                        "items.{$index}.damaged_quantity",
+                        'Damaged quantity cannot exceed received quantity.'
+                    );
+                }
+            }
+        });
+    }
 }

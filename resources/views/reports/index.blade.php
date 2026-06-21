@@ -13,7 +13,7 @@
             @foreach ([
                 ['sales', 'fa-cash-register', 'Sales', 'Revenue, tickets, top sellers'],
                 ['inventory', 'fa-boxes-stacked', 'Inventory', 'Valuation, low stock, movements'],
-                ['procurement', 'fa-folder-open', 'Procurement', 'Folders, POs, receipts'],
+                ['procurement', 'fa-folder-open', 'Quotation Series', 'Series, POs, receipts'],
                 ['transfers', 'fa-right-left', 'Transfers', 'Requests and dispatch activity'],
                 ['financial', 'fa-coins', 'Financial', 'Revenue, refunds, payment mix'],
             ] as [$slug, $icon, $title, $desc])

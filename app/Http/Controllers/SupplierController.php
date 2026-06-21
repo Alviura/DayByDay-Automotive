@@ -92,6 +92,7 @@ class SupplierController extends Controller
             'email' => $request->email,
             'country' => $request->country,
             'currency' => strtoupper($request->currency),
+            'purchase_type' => $request->purchase_type,
             'lead_time_days' => $request->lead_time_days,
             'rating' => $request->filled('rating') ? $request->rating : null,
             'address' => $request->address,

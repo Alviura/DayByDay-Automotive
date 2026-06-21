@@ -7,7 +7,7 @@ use App\Http\Controllers\CustomerReturnController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GoodsReceiptController;
 use App\Http\Controllers\InventoryController;
-use App\Http\Controllers\ProcurementFolderController;
+use App\Http\Controllers\QuotationSeriesController;
 use App\Http\Controllers\ProductCatalogController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseOrderController;
@@ -91,18 +91,31 @@ Route::middleware('auth')->group(function () {
     Route::resource('stock-adjustments', StockAdjustmentController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
     Route::post('stock-adjustments/{stock_adjustment}/submit', [StockAdjustmentController::class, 'submit'])->name('stock-adjustments.submit');
 
-    // Procurement (M13)
-    Route::prefix('procurement')->name('procurement.')->group(function () {
-        Route::resource('folders', ProcurementFolderController::class);
-        Route::post('folders/{folder}/items', [ProcurementFolderController::class, 'storeItem'])->name('folders.items.store');
-        Route::delete('folders/{folder}/items/{item}', [ProcurementFolderController::class, 'destroyItem'])->name('folders.items.destroy');
-        Route::post('folders/{folder}/cost-analysis', [ProcurementFolderController::class, 'runCostAnalysis'])->name('folders.cost-analysis');
-        Route::post('folders/{folder}/submit', [ProcurementFolderController::class, 'submit'])->name('folders.submit');
-        Route::post('folders/{folder}/generate-po', [ProcurementFolderController::class, 'generatePo'])->name('folders.generate-po');
-        Route::post('folders/{folder}/in-transit', [ProcurementFolderController::class, 'markInTransit'])->name('folders.in-transit');
-        Route::post('folders/{folder}/close', [ProcurementFolderController::class, 'close'])->name('folders.close');
-    });
+    // Quotation series (M13)
+    Route::get('quotation-series/suppliers/{supplier}/defaults', [QuotationSeriesController::class, 'supplierDefaults'])->name('quotation-series.suppliers.defaults');
+    Route::resource('quotation-series', QuotationSeriesController::class);
+    Route::get('quotation-series/{quotation_series}/products/search', [QuotationSeriesController::class, 'searchProducts'])->name('quotation-series.products.search');
+    Route::post('quotation-series/{quotation_series}/items/bulk', [QuotationSeriesController::class, 'bulkAddItems'])->name('quotation-series.items.bulk');
+    Route::delete('quotation-series/{quotation_series}/items/{item}', [QuotationSeriesController::class, 'destroyItem'])->name('quotation-series.items.destroy');
+    Route::post('quotation-series/{quotation_series}/proceed', [QuotationSeriesController::class, 'proceedToOrder'])->name('quotation-series.proceed');
+    Route::patch('quotation-series/{quotation_series}/items/prices', [QuotationSeriesController::class, 'updatePrices'])->name('quotation-series.items.prices');
+    Route::post('quotation-series/{quotation_series}/calculate', [QuotationSeriesController::class, 'calculate'])->name('quotation-series.calculate');
+    Route::post('quotation-series/{quotation_series}/confirm', [QuotationSeriesController::class, 'confirmOrder'])->name('quotation-series.confirm');
+    Route::get('quotation-series/{quotation_series}/export/{format}', [QuotationSeriesController::class, 'export'])->name('quotation-series.export');
+    Route::post('quotation-series/{quotation_series}/generate-po', [QuotationSeriesController::class, 'generatePo'])->name('quotation-series.generate-po');
+    Route::post('quotation-series/{quotation_series}/in-transit', [QuotationSeriesController::class, 'markInTransit'])->name('quotation-series.in-transit');
+    Route::post('quotation-series/{quotation_series}/close', [QuotationSeriesController::class, 'close'])->name('quotation-series.close');
+
+    // Legacy procurement folder URLs (pre-quotation-series rename)
+    Route::redirect('procurement/folders', '/quotation-series', 301);
+    Route::redirect('procurement/folders/create', '/quotation-series/create', 301);
+    Route::get('procurement/suppliers/{supplier}/defaults', fn (\App\Models\Supplier $supplier) => redirect()->route('quotation-series.suppliers.defaults', $supplier));
+    Route::get('procurement/folders/{path}', function (string $path) {
+        return redirect('/quotation-series/'.$path, 301);
+    })->where('path', '.+');
+
     Route::resource('purchase-orders', PurchaseOrderController::class)->only(['index', 'show']);
+    Route::get('goods-receipts', [GoodsReceiptController::class, 'index'])->name('goods-receipts.index');
     Route::get('purchase-orders/{purchase_order}/goods-receipts/create', [GoodsReceiptController::class, 'create'])->name('goods-receipts.create');
     Route::post('purchase-orders/{purchase_order}/goods-receipts', [GoodsReceiptController::class, 'store'])->name('goods-receipts.store');
     Route::get('goods-receipts/{goods_receipt_note}', [GoodsReceiptController::class, 'show'])->name('goods-receipts.show');

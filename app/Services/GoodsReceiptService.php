@@ -22,7 +22,7 @@ class GoodsReceiptService
         ?User $user = null
     ): GoodsReceiptNote {
         $user ??= auth()->user();
-        $purchaseOrder->load(['items.product', 'folder', 'supplier']);
+        $purchaseOrder->load(['items.product', 'quotationSeries', 'supplier']);
 
         return DB::transaction(function () use ($purchaseOrder, $warehouseId, $lines, $notes, $user) {
             $warehouse = \App\Models\Warehouse::findOrFail($warehouseId);
@@ -30,7 +30,7 @@ class GoodsReceiptService
             $grn = GoodsReceiptNote::create([
                 'grn_number' => GoodsReceiptNote::generateNumber(),
                 'purchase_order_id' => $purchaseOrder->id,
-                'procurement_folder_id' => $purchaseOrder->procurement_folder_id,
+                'quotation_series_id' => $purchaseOrder->quotation_series_id,
                 'warehouse_id' => $warehouse->id,
                 'received_by' => $user->id,
                 'received_at' => now(),
@@ -39,9 +39,15 @@ class GoodsReceiptService
 
             foreach ($lines as $line) {
                 $poItem = $purchaseOrder->items()->where('product_id', $line['product_id'])->firstOrFail();
-                $received = (float) $line['received_quantity'];
-                $damaged = (float) ($line['damaged_quantity'] ?? 0);
-                $goodQty = max(0, $received - $damaged);
+                $received = GoodsReceiptNoteItem::normalizeQuantity($line['received_quantity']);
+                $damaged = GoodsReceiptNoteItem::normalizeQuantity($line['damaged_quantity'] ?? 0);
+                $goodQty = max(0, round($received - $damaged, 2));
+
+                if ($damaged > $received) {
+                    throw new InventoryException(
+                        "Damaged quantity cannot exceed received for {$poItem->product->part_number}."
+                    );
+                }
 
                 if ($received > $poItem->remainingQuantity() + 0.001) {
                     throw new InventoryException(
@@ -76,12 +82,12 @@ class GoodsReceiptService
                     $this->updateProductCost($poItem->product, $unitCost);
                 }
 
-                $poItem->received_quantity = (float) $poItem->received_quantity + $received;
+                $poItem->received_quantity = round((float) $poItem->received_quantity + $received, 2);
                 $poItem->save();
             }
 
             $this->refreshPurchaseOrderStatus($purchaseOrder);
-            $this->refreshFolderStatus($purchaseOrder);
+            $this->refreshSeriesStatus($purchaseOrder);
 
             return $grn->load(['items.product', 'warehouse', 'purchaseOrder']);
         });
@@ -118,20 +124,20 @@ class GoodsReceiptService
         ]);
     }
 
-    private function refreshFolderStatus(PurchaseOrder $purchaseOrder): void
+    private function refreshSeriesStatus(PurchaseOrder $purchaseOrder): void
     {
-        $folder = $purchaseOrder->folder;
+        $series = $purchaseOrder->quotationSeries;
 
-        if (! $folder) {
+        if (! $series) {
             return;
         }
 
-        $allPosReceived = $folder->purchaseOrders()
+        $allPosReceived = $series->purchaseOrders()
             ->get()
             ->every(fn (PurchaseOrder $po) => $po->status === 'received');
 
         if ($allPosReceived) {
-            $folder->update(['status' => 'received']);
+            $series->update(['status' => 'received']);
         }
     }
 }

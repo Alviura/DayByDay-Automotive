@@ -22,6 +22,7 @@ class StoreSupplierRequest extends FormRequest
             'email' => ['nullable', 'email', 'max:255'],
             'country' => ['nullable', 'string', 'max:100'],
             'currency' => ['required', 'string', 'size:3', 'alpha'],
+            'purchase_type' => ['required', Rule::in(['local', 'import'])],
             'lead_time_days' => ['nullable', 'integer', 'min:0', 'max:365'],
             'rating' => ['nullable', 'numeric', 'min:0', 'max:5'],
             'address' => ['nullable', 'string', 'max:500'],

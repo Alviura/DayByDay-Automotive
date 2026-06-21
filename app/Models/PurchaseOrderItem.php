@@ -42,6 +42,6 @@ class PurchaseOrderItem extends Model
 
     public function remainingQuantity(): float
     {
-        return max(0, (float) $this->quantity - (float) $this->received_quantity);
+        return max(0, round((float) $this->quantity - (float) $this->received_quantity, 2));
     }
 }

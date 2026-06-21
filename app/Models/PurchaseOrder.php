@@ -13,7 +13,7 @@ class PurchaseOrder extends Model
 
     protected $fillable = [
         'po_number',
-        'procurement_folder_id',
+        'quotation_series_id',
         'supplier_id',
         'status',
         'delivery_status',
@@ -44,9 +44,15 @@ class PurchaseOrder extends Model
         return $prefix.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
     }
 
+    public function quotationSeries(): BelongsTo
+    {
+        return $this->belongsTo(QuotationSeries::class, 'quotation_series_id');
+    }
+
+    /** @deprecated use quotationSeries() */
     public function folder(): BelongsTo
     {
-        return $this->belongsTo(ProcurementFolder::class, 'procurement_folder_id');
+        return $this->quotationSeries();
     }
 
     public function supplier(): BelongsTo
@@ -94,5 +100,26 @@ class PurchaseOrder extends Model
     public function canReceive(): bool
     {
         return in_array($this->status, ['sent', 'partially_received'], true);
+    }
+
+    public function totalOrderedQuantity(): float
+    {
+        return (float) $this->items->sum('quantity');
+    }
+
+    public function totalReceivedQuantity(): float
+    {
+        return (float) $this->items->sum('received_quantity');
+    }
+
+    public function receiptProgressPercent(): int
+    {
+        $ordered = $this->totalOrderedQuantity();
+
+        if ($ordered <= 0) {
+            return 0;
+        }
+
+        return (int) round(($this->totalReceivedQuantity() / $ordered) * 100);
     }
 }

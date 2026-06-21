@@ -277,11 +277,14 @@
                 </a>
             @endcan
             @can('procurement.view')
-                <a href="{{ route('procurement.folders.index') }}" class="sb-link {{ request()->routeIs('procurement.*', 'purchase-orders.*', 'goods-receipts.*') ? 'active' : '' }}">
-                    <i class="fas fa-folder-open w-4 text-center text-amber-400"></i> Procurement Folders
+                <a href="{{ route('quotation-series.index') }}" class="sb-link {{ request()->routeIs('quotation-series.*', 'purchase-orders.*', 'goods-receipts.*') ? 'active' : '' }}">
+                    <i class="fas fa-folder-open w-4 text-center text-amber-400"></i> Quotation Series
                 </a>
-                <a href="{{ route('purchase-orders.index') }}" class="sb-link {{ request()->routeIs('purchase-orders.*', 'goods-receipts.*') ? 'active' : '' }}">
+                <a href="{{ route('purchase-orders.index') }}" class="sb-link {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}">
                     <i class="fas fa-file-invoice-dollar w-4 text-center text-amber-300"></i> Purchase Orders
+                </a>
+                <a href="{{ route('goods-receipts.index') }}" class="sb-link {{ request()->routeIs('goods-receipts.*') ? 'active' : '' }}">
+                    <i class="fas fa-truck-ramp-box w-4 text-center text-emerald-400"></i> Goods Receipts
                 </a>
             @endcan
 

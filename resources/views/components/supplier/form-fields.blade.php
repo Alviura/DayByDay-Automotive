@@ -63,6 +63,17 @@
     </div>
 
     <div>
+        <label for="purchase_type" class="mi-field-label">
+            <i class="fas fa-ship"></i> Purchase Type
+        </label>
+        <select id="purchase_type" name="purchase_type" class="mi-select" required>
+            <option value="local" @selected(old('purchase_type', $supplier->purchase_type ?? 'local') === 'local')>Local</option>
+            <option value="import" @selected(old('purchase_type', $supplier->purchase_type ?? 'local') === 'import')>Import</option>
+        </select>
+        <x-input-error :messages="$errors->get('purchase_type')" class="mt-1.5" />
+    </div>
+
+    <div>
         <label for="lead_time_days" class="mi-field-label">
             <i class="fas fa-truck"></i> Lead Time (days)
         </label>

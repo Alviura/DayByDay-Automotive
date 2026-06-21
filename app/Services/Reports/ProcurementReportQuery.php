@@ -3,19 +3,19 @@
 namespace App\Services\Reports;
 
 use App\Models\GoodsReceiptNote;
-use App\Models\ProcurementFolder;
 use App\Models\PurchaseOrder;
+use App\Models\QuotationSeries;
 use Illuminate\Support\Collection;
 
 class ProcurementReportQuery
 {
     public function run(ReportFilters $filters): array
     {
-        $foldersQuery = ProcurementFolder::query()
+        $seriesQuery = QuotationSeries::query()
             ->whereBetween('created_at', [$filters->from, $filters->to]);
 
-        $statusBreakdown = (clone $foldersQuery)
-            ->selectRaw('status, COUNT(*) as count, SUM(total_landing_cost) as value')
+        $statusBreakdown = (clone $seriesQuery)
+            ->selectRaw('status, COUNT(*) as count, SUM(COALESCE(total_actual_cost, total_landing_cost)) as value')
             ->groupBy('status')
             ->orderBy('status')
             ->get();
@@ -27,18 +27,18 @@ class ProcurementReportQuery
             ->whereBetween('received_at', [$filters->from, $filters->to]);
 
         $summary = [
-            'folders_open' => ProcurementFolder::whereNotIn('status', ['closed', 'cancelled'])->count(),
-            'folders_in_period' => (clone $foldersQuery)->count(),
+            'series_open' => QuotationSeries::whereNotIn('status', ['closed', 'cancelled'])->count(),
+            'series_in_period' => (clone $seriesQuery)->count(),
             'po_value' => (float) (clone $poQuery)->sum('total'),
             'po_count' => (clone $poQuery)->count(),
             'grn_count' => (clone $grnQuery)->count(),
         ];
 
-        $recentFolders = (clone $foldersQuery)
+        $recentSeries = (clone $seriesQuery)
             ->with('supplier:id,name')
             ->latest()
             ->limit(15)
-            ->get(['id', 'folder_number', 'supplier_id', 'status', 'total_landing_cost', 'currency', 'created_at']);
+            ->get(['id', 'series_number', 'title', 'supplier_id', 'status', 'total_actual_cost', 'total_landing_cost', 'currency', 'created_at']);
 
         $recentPos = (clone $poQuery)
             ->with('supplier:id,name')
@@ -46,20 +46,21 @@ class ProcurementReportQuery
             ->limit(15)
             ->get(['id', 'po_number', 'supplier_id', 'status', 'total', 'currency', 'order_date']);
 
-        return compact('summary', 'statusBreakdown', 'recentFolders', 'recentPos');
+        return compact('summary', 'statusBreakdown', 'recentSeries', 'recentPos');
     }
 
     public function csvRows(ReportFilters $filters): Collection
     {
         $data = $this->run($filters);
 
-        return $data['recentFolders']->map(fn ($folder) => [
-            'Folder' => $folder->folder_number,
-            'Supplier' => $folder->supplier?->name,
-            'Status' => $folder->statusLabel(),
-            'Landing Cost' => $folder->total_landing_cost,
-            'Currency' => $folder->currency,
-            'Created' => $folder->created_at?->format('Y-m-d'),
+        return $data['recentSeries']->map(fn ($series) => [
+            'Series' => $series->displayName(),
+            'Reference' => $series->series_number,
+            'Supplier' => $series->supplier?->name,
+            'Status' => $series->statusLabel(),
+            'Actual Cost' => $series->total_actual_cost ?: $series->total_landing_cost,
+            'Currency' => $series->currency,
+            'Created' => $series->created_at?->format('Y-m-d'),
         ]);
     }
 }

@@ -98,12 +98,12 @@
                                 </dd>
                             </div>
                         @endif
-                        @if ($approval->approvable instanceof \App\Models\ProcurementFolder)
+                        @if ($approval->approvable instanceof \App\Models\QuotationSeries)
                             <div class="mi-detail-item">
                                 <dt class="mi-detail-label"><i class="fas fa-folder-open"></i> Source Document</dt>
                                 <dd class="mi-detail-value">
-                                    <a href="{{ route('procurement.folders.show', $approval->approvable) }}" class="text-orange-600 hover:text-orange-700">
-                                        View folder {{ $approval->approvable->folder_number }}
+                                    <a href="{{ route('quotation-series.show', $approval->approvable) }}" class="text-orange-600 hover:text-orange-700">
+                                        View series {{ $approval->approvable->displayName() }}
                                     </a>
                                 </dd>
                             </div>

@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class RunCostAnalysisRequest extends FormRequest
+class BulkQuotationItemsRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -14,9 +14,9 @@ class RunCostAnalysisRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'total_freight' => ['nullable', 'numeric', 'min:0'],
-            'total_tax' => ['nullable', 'numeric', 'min:0'],
-            'default_margin' => ['nullable', 'numeric', 'min:0', 'max:500'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'exists:products,id'],
+            'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
         ];
     }
 }

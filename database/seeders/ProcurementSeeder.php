@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use App\Models\ProcurementFolder;
-use App\Models\ProcurementItem;
 use App\Models\Product;
+use App\Models\QuotationItem;
+use App\Models\QuotationSeries;
 use App\Models\Supplier;
 use App\Models\User;
-use App\Services\CostAnalysisService;
+use App\Services\Procurement\QuotationCalculationService;
 use Illuminate\Database\Seeder;
 
 class ProcurementSeeder extends Seeder
@@ -15,67 +15,73 @@ class ProcurementSeeder extends Seeder
     public function run(): void
     {
         $admin = User::where('email', 'admin@daybyday.test')->first();
-        $supplier = Supplier::query()->orderBy('id')->first();
-        $products = Product::active()->limit(3)->get();
+        $localSupplier = Supplier::where('country', 'Kenya')->first();
+        $importSupplier = Supplier::where('country', '!=', 'Kenya')->first();
+        $products = Product::active()->limit(4)->get();
 
-        if (! $admin || ! $supplier || $products->isEmpty()) {
+        if (! $admin || ! $localSupplier || $products->isEmpty()) {
             return;
         }
 
-        $draft = ProcurementFolder::firstOrCreate(
-            ['folder_number' => 'PF-'.date('Y').'-9001'],
+        $quotation = QuotationSeries::firstOrCreate(
+            ['series_number' => 'PF-'.date('Y').'-9001'],
             [
-                'supplier_id' => $supplier->id,
+                'title' => QuotationSeries::generateTitle($localSupplier, 'DEMO LOCAL QUOTATION'),
+                'description' => 'DEMO LOCAL QUOTATION',
+                'supplier_id' => $localSupplier->id,
                 'currency' => 'KES',
                 'exchange_rate' => 1,
-                'import_type' => 'Sea freight',
-                'status' => 'draft',
-                'notes' => 'Demo draft folder — add lines, run cost analysis, then submit for approval.',
-                'total_freight' => 15000,
-                'total_tax' => 8500,
+                'purchase_type' => 'local',
+                'import_type' => 'local',
+                'status' => 'quotation_draft',
+                'notes' => 'Demo quotation draft — add products and proceed to order processing.',
                 'created_by' => $admin->id,
             ]
         );
 
-        if ($draft->items()->doesntExist()) {
-            foreach ($products as $index => $product) {
-                ProcurementItem::create([
-                    'procurement_folder_id' => $draft->id,
+        if ($quotation->items()->doesntExist()) {
+            foreach ($products->take(3) as $index => $product) {
+                QuotationItem::create([
+                    'quotation_series_id' => $quotation->id,
                     'product_id' => $product->id,
-                    'quantity' => 20 - ($index * 5),
-                    'unit_cost' => (float) $product->cost_price,
-                    'cbm' => 0.5 - ($index * 0.1),
+                    'quantity' => [22, 5, 3][$index] ?? 10,
                 ]);
             }
         }
 
-        $ready = ProcurementFolder::firstOrCreate(
-            ['folder_number' => 'PF-'.date('Y').'-9002'],
-            [
-                'supplier_id' => $supplier->id,
-                'currency' => 'USD',
-                'exchange_rate' => 130,
-                'import_type' => 'Air freight',
-                'status' => 'draft',
-                'notes' => 'Ready for approval after cost analysis — submit from the Workflow tab.',
-                'total_freight' => 2500,
-                'total_tax' => 1200,
-                'created_by' => $admin->id,
-            ]
-        );
+        if ($importSupplier) {
+            $importSeries = QuotationSeries::firstOrCreate(
+                ['series_number' => 'PF-'.date('Y').'-9002'],
+                [
+                    'title' => QuotationSeries::generateTitle($importSupplier, 'DEMO IMPORT ORDER'),
+                    'description' => 'DEMO IMPORT ORDER',
+                    'supplier_id' => $importSupplier->id,
+                    'currency' => 'USD',
+                    'exchange_rate' => 31.5,
+                    'cbm_rate' => 55033,
+                    'purchase_type' => 'import',
+                    'import_type' => 'import',
+                    'status' => 'order_draft',
+                    'notes' => 'Demo import order — enter prices and calculate.',
+                    'created_by' => $admin->id,
+                ]
+            );
 
-        if ($ready->status === 'draft' && $ready->items()->doesntExist()) {
-            foreach ($products->take(2) as $index => $product) {
-                ProcurementItem::create([
-                    'procurement_folder_id' => $ready->id,
-                    'product_id' => $product->id,
-                    'quantity' => 10,
-                    'unit_cost' => (float) $product->cost_price * 0.85,
-                    'cbm' => 0.3 + ($index * 0.15),
+            if ($importSeries->items()->doesntExist()) {
+                $importSeries->items()->create([
+                    'quotation_series_id' => $importSeries->id,
+                    'product_id' => $products->first()->id,
+                    'quantity' => 300,
+                    'unit_price_foreign' => 16.5375,
+                    'width' => 0.07,
+                    'length' => 0.17,
+                    'height' => 0.09,
+                    'quantity_per_packet' => 1,
+                    'number_of_packets' => 300,
                 ]);
-            }
 
-            app(CostAnalysisService::class)->analyze($ready, 2500, 1200, 35);
+                app(QuotationCalculationService::class)->calculate($importSeries);
+            }
         }
     }
 }

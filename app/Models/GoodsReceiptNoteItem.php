@@ -23,6 +23,38 @@ class GoodsReceiptNoteItem extends Model
         'unit_cost' => 'decimal:2',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (GoodsReceiptNoteItem $item) {
+            foreach (['expected_quantity', 'received_quantity', 'damaged_quantity'] as $attribute) {
+                if ($item->{$attribute} !== null) {
+                    $item->{$attribute} = self::normalizeQuantity($item->{$attribute});
+                }
+            }
+        });
+    }
+
+    public static function normalizeQuantity(float|string|null $value): float
+    {
+        $value = round((float) $value, 2);
+        $nearest = round($value);
+
+        if (abs($value - $nearest) < 0.05) {
+            return (float) $nearest;
+        }
+
+        return $value;
+    }
+
+    public static function formatQuantity(float|string|null $value): string
+    {
+        $value = self::normalizeQuantity($value);
+
+        return abs($value - round($value)) < 0.001
+            ? number_format($value, 0)
+            : number_format($value, 2);
+    }
+
     public function goodsReceiptNote(): BelongsTo
     {
         return $this->belongsTo(GoodsReceiptNote::class);
@@ -35,6 +67,9 @@ class GoodsReceiptNoteItem extends Model
 
     public function goodQuantity(): float
     {
-        return max(0, (float) $this->received_quantity - (float) $this->damaged_quantity);
+        $received = self::normalizeQuantity($this->received_quantity);
+        $damaged = self::normalizeQuantity($this->damaged_quantity);
+
+        return max(0, round($received - $damaged, 2));
     }
 }

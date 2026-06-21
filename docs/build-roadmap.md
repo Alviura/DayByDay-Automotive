@@ -187,10 +187,13 @@ adjustments, and large discounts.
 # PHASE 4 — OPERATIONS
 
 ## M13. Procurement & Quotation (Spec §7)
+
+> **Implementation spec:** see [procurement-quotation-spec.md](./procurement-quotation-spec.md) for the redesigned three-phase workflow (quotation draft → order processing → auto-approve).
+
 **Purpose:** Folder → cost analysis → approval → PO → goods-in-transit → receipt → close.
 - **Models:** `ProcurementFolder` (Approvable, Auditable), `ProcurementItem`, `PurchaseOrder`, `PurchaseOrderItem`, `GoodsReceiptNote`, `GoodsReceiptNoteItem`
-- **Services:** `CostAnalysisService` (freight/CBM/tax → landing cost, cost-per-unit, margin, recommended price), `GoodsReceiptService` (validates qty, posts `purchase_receipt` to InventoryService, updates product cost)
-- **Requests:** `StoreProcurementFolderRequest`, `ProcurementItemRequest`, `StorePurchaseOrderRequest`, `StoreGoodsReceiptRequest`
+- **Services:** `ProcurementFolderService`, `ProcurementCalculationService`, `LocalOrderCalculator`, `ImportOrderCalculator`, `GoodsReceiptService` (validates qty, posts `purchase_receipt` to InventoryService, updates product cost on receipt only)
+- **Requests:** `StoreProcurementFolderRequest`, `BulkProcurementItemsRequest`, `UpdateProcurementPricesRequest`, `StorePurchaseOrderRequest`, `StoreGoodsReceiptRequest`
 - **Controllers:** `ProcurementFolderController`, `ProcurementItemController`, `PurchaseOrderController`, `GoodsReceiptController`
 - **Views:** `procurement/folders/{index,create,edit,show}`, `procurement/cost-analysis`, `purchase-orders/{index,show}`, `goods-receipts/{create,show}`
 - **Routes:** `procurement.*`, `purchase-orders.*`, `goods-receipts.*`

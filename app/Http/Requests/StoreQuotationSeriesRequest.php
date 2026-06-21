@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreProcurementFolderRequest extends FormRequest
+class StoreQuotationSeriesRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -16,12 +16,12 @@ class StoreProcurementFolderRequest extends FormRequest
     {
         return [
             'supplier_id' => ['required', 'exists:suppliers,id'],
-            'currency' => ['required', 'string', 'size:3', 'alpha'],
+            'description' => ['nullable', 'string', 'max:255'],
+            'currency' => ['nullable', 'string', 'size:3', 'alpha'],
+            'purchase_type' => ['nullable', Rule::in(['local', 'import'])],
             'exchange_rate' => ['nullable', 'numeric', 'min:0'],
-            'import_type' => ['nullable', 'string', 'max:100'],
+            'cbm_rate' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:2000'],
-            'total_freight' => ['nullable', 'numeric', 'min:0'],
-            'total_tax' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }

@@ -16,8 +16,8 @@ return [
             'label' => 'Demo Request',
             'icon' => 'fa-flask',
         ],
-        'procurement' => [
-            'label' => 'Procurement',
+        'quotation-series' => [
+            'label' => 'Quotation Series',
             'icon' => 'fa-file-invoice-dollar',
         ],
         'transfer' => [
@@ -59,7 +59,8 @@ return [
     'module_models' => [
         'demonstration' => \App\Models\ApprovalDemonstration::class,
         'adjustment' => \App\Models\StockAdjustment::class,
-        'procurement' => \App\Models\ProcurementFolder::class,
+        'quotation-series' => \App\Models\QuotationSeries::class,
+        'procurement' => \App\Models\QuotationSeries::class, // legacy inbox filter key
         'transfer' => \App\Models\TransferRequest::class,
         'return' => \App\Models\ReturnRecord::class,
     ],

@@ -18,6 +18,7 @@ class Supplier extends Model
         'email',
         'country',
         'currency',
+        'purchase_type',
         'lead_time_days',
         'rating',
         'address',

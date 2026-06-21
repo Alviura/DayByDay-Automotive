@@ -162,12 +162,12 @@
                     <div class="mi-card-head">
                         <div class="flex items-center gap-2 text-gray-700">
                             <i class="fas fa-folder-open text-gray-400 text-sm"></i>
-                            <span class="text-sm font-semibold">Procurement History</span>
+                            <span class="text-sm font-semibold">Quotation Series History</span>
                         </div>
                     </div>
                     <div class="mi-show-empty">
                         <i class="fas fa-clock"></i>
-                        <p>Procurement folders and purchase orders will appear here once M13 is built.</p>
+                        <p>Quotation series and purchase orders will appear here once linked to this supplier.</p>
                     </div>
                 </div>
             </div>
