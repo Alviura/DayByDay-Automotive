@@ -26,8 +26,7 @@
                 </p>
             </div>
         @else
-            <form action="{{ route('shops.destroy', $shop) }}" method="POST" class="mt-3"
-                  onsubmit="return confirm('Delete {{ addslashes($shop->name) }}? This cannot be undone easily.');">
+            <form action="{{ route('shops.destroy', $shop) }}" method="POST" class="mt-3" data-confirm="Delete {{ addslashes($shop->name) }}? This cannot be undone easily." data-confirm-variant="danger">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="mi-btn-danger w-full justify-center">

@@ -32,7 +32,7 @@
                                     @can('roles.manage')
                                         <a href="{{ route('roles.edit', $role) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
                                         @unless (in_array($role->name, ['Administrator', 'Shop Manager'], true))
-                                            <form action="{{ route('roles.destroy', $role) }}" method="POST" class="inline" onsubmit="return confirm('Delete this role?');">
+                                            <form action="{{ route('roles.destroy', $role) }}" method="POST" class="inline" data-confirm="Delete this role?" data-confirm-variant="danger">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>

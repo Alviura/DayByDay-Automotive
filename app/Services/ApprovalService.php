@@ -87,6 +87,30 @@ class ApprovalService
             ->count();
     }
 
+    /**
+     * @return array<string, int>
+     */
+    public function pendingCountByModule(?User $user = null): array
+    {
+        $query = Approval::query()->pending();
+
+        if ($user && ! $user->hasRole(config('approvals.default_approver_role'))) {
+            $query->forApprover($user);
+        }
+
+        $counts = [];
+
+        foreach (config('approvals.module_models', []) as $key => $model) {
+            if (! (config("approvals.modules.{$key}.pipeline") ?? true)) {
+                continue;
+            }
+
+            $counts[$key] = (clone $query)->where('approvable_type', $model)->count();
+        }
+
+        return $counts;
+    }
+
     public function resolveDefaultApprover(): ?User
     {
         return User::role(config('approvals.default_approver_role'))

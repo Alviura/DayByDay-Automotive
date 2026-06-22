@@ -1,0 +1,199 @@
+<x-app-layout title="Stock Transfers">
+
+    @push('styles')
+        <x-module.page-index-styles />
+        @include('transfers.partials.page-styles')
+    @endpush
+
+    <div class="mi-page space-y-5" x-data="{ filtersOpen: {{ request()->hasAny(['search', 'status', 'type', 'sort']) ? 'true' : 'false' }} }">
+
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div class="flex items-start gap-3">
+                <div class="mi-page-icon"><i class="fas fa-right-left"></i></div>
+                <div>
+                    <h1 class="text-[1.35rem] font-bold text-gray-900 leading-tight">Stock Transfers</h1>
+                    <p class="mt-0.5 text-sm text-gray-500">Request, approve, dispatch, and receive stock between warehouse and shops.</p>
+                </div>
+            </div>
+            @can('transfers.request')
+                <a href="{{ route('transfers.create') }}" class="mi-btn-orange">
+                    <i class="fas fa-plus text-xs"></i> New Transfer
+                </a>
+            @endcan
+        </div>
+
+        <div class="mi-kpi-row">
+            <div class="mi-kpi mi-kpi-purple">
+                <div>
+                    <p class="mi-kpi-label">Total</p>
+                    <p class="mi-kpi-value">{{ number_format($stats['total']) }}</p>
+                    <p class="tr-kpi-sub">All transfers</p>
+                </div>
+                <div class="mi-kpi-icon"><i class="fas fa-list"></i></div>
+            </div>
+            <div class="mi-kpi mi-kpi-amber">
+                <div>
+                    <p class="mi-kpi-label">Draft · Pending</p>
+                    <p class="mi-kpi-value">{{ $stats['draft'] + $stats['pending'] }}</p>
+                    <p class="tr-kpi-sub">{{ $stats['draft'] }} draft · {{ $stats['pending'] }} pending</p>
+                </div>
+                <div class="mi-kpi-icon"><i class="fas fa-pen"></i></div>
+            </div>
+            <div class="mi-kpi mi-kpi-green">
+                <div>
+                    <p class="mi-kpi-label">Ready to Dispatch</p>
+                    <p class="mi-kpi-value">{{ number_format($stats['approved']) }}</p>
+                    <p class="tr-kpi-sub">Approved, awaiting shipment</p>
+                </div>
+                <div class="mi-kpi-icon"><i class="fas fa-circle-check"></i></div>
+            </div>
+            <div class="mi-kpi mi-kpi-orange">
+                <div>
+                    <p class="mi-kpi-label">In Transit · Done</p>
+                    <p class="mi-kpi-value orange">{{ $stats['in_transit'] + $stats['completed'] }}</p>
+                    <p class="tr-kpi-sub">{{ $stats['in_transit'] }} in transit · {{ $stats['completed'] }} completed</p>
+                </div>
+                <div class="mi-kpi-icon"><i class="fas fa-truck"></i></div>
+            </div>
+        </div>
+
+        <div class="mi-form-split">
+            <div class="space-y-5 min-w-0">
+
+                <div class="mi-card p-4">
+                    <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Pipeline</p>
+                    <div class="tr-pipeline">
+                        @foreach ($pipeline as $step)
+                            @php
+                                $params = request()->except('page');
+                                if ($step['key'] === '') {
+                                    unset($params['status']);
+                                } else {
+                                    $params['status'] = $step['key'];
+                                }
+                                $isActive = request('status', '') === $step['key'];
+                            @endphp
+                            <a href="{{ route('transfers.index', $params) }}"
+                               class="tr-pipe-step {{ $isActive ? 'active' : '' }}">
+                                <div class="tr-pipe-icon"><i class="fas {{ $step['icon'] }}"></i></div>
+                                <span class="tr-pipe-count">{{ $step['count'] }}</span>
+                                <span class="tr-pipe-label">{{ $step['label'] }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="mi-card">
+                    <div class="mi-card-head">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-filter text-gray-400 text-xs"></i> Filters
+                            </p>
+                        </div>
+                        <button type="button" @click="filtersOpen = !filtersOpen" class="mi-btn-ghost text-xs">
+                            <i class="fas fa-chevron-down transition-transform" :class="{ 'rotate-180': filtersOpen }"></i>
+                        </button>
+                    </div>
+                    <form method="GET" x-show="filtersOpen" x-transition class="border-t border-gray-100">
+                        @if (request('status'))
+                            <input type="hidden" name="status" value="{{ request('status') }}">
+                        @endif
+                        <div class="mi-filter-grid p-4 pb-0">
+                            <div class="mi-filter-field">
+                                <label class="mi-field-label">Search</label>
+                                <input type="text" name="search" value="{{ request('search') }}" class="mi-input" placeholder="Request #, dispatch #, notes…">
+                            </div>
+                            <div class="mi-filter-field">
+                                <label class="mi-field-label">Type</label>
+                                <select name="type" class="mi-select">
+                                    <option value="">All types</option>
+                                    <option value="warehouse_to_shop" @selected(request('type') === 'warehouse_to_shop')>Warehouse → Shop</option>
+                                    <option value="inter_shop" @selected(request('type') === 'inter_shop')>Shop → Shop</option>
+                                </select>
+                            </div>
+                            <div class="mi-filter-field">
+                                <label class="mi-field-label">Sort</label>
+                                <select name="sort" class="mi-select">
+                                    <option value="newest" @selected(request('sort', 'newest') !== 'oldest')>Newest first</option>
+                                    <option value="oldest" @selected(request('sort') === 'oldest')>Oldest first</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mi-filter-actions p-4">
+                            <button type="submit" class="mi-btn-orange"><i class="fas fa-magnifying-glass text-xs"></i> Apply</button>
+                            <a href="{{ route('transfers.index', request('status') ? ['status' => request('status')] : []) }}" class="mi-btn-ghost">Reset</a>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="mi-card">
+                    <div class="mi-card-head">
+                        <p class="text-sm text-gray-500">
+                            {{ $requests->total() }} {{ str('transfer')->plural($requests->total()) }} · click a row to open
+                        </p>
+                    </div>
+                    <div class="mi-table-wrap">
+                        <table class="mi-table">
+                            <thead>
+                                <tr>
+                                    <th>Transfer</th>
+                                    <th>Route</th>
+                                    <th>Type</th>
+                                    <th>Lines</th>
+                                    <th>Units</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($requests as $item)
+                                    @php $showUrl = route('transfers.show', $item); @endphp
+                                    <tr class="tr-index-row" onclick="window.location='{{ $showUrl }}'">
+                                        <td>
+                                            <a href="{{ $showUrl }}" class="tr-ref" onclick="event.stopPropagation()">{{ $item->request_number }}</a>
+                                            @if ($item->stockTransfer)
+                                                <p class="text-xs text-gray-400 mt-0.5 font-mono">{{ $item->stockTransfer->transfer_number }}</p>
+                                            @elseif ($item->requester)
+                                                <p class="text-xs text-gray-400 mt-0.5">{{ $item->requester->name }}</p>
+                                            @endif
+                                        </td>
+                                        <td>@include('transfers.partials.route-display', ['transferRequest' => $item])</td>
+                                        <td>
+                                            <span class="tr-type-pill">
+                                                <i class="fas fa-{{ $item->type === 'warehouse_to_shop' ? 'warehouse' : 'store' }} text-[0.55rem] text-gray-400"></i>
+                                                {{ $item->typeLabel() }}
+                                            </span>
+                                        </td>
+                                        <td class="font-medium">{{ $item->items_count }}</td>
+                                        <td class="text-gray-600">{{ number_format((float) ($item->total_units ?? 0), 0) }}</td>
+                                        <td>@include('transfers.partials.status-badge', ['request' => $item])</td>
+                                        <td class="text-sm text-gray-500 whitespace-nowrap">{{ $item->created_at->format('d M Y') }}</td>
+                                        <td class="text-gray-300"><i class="fas fa-chevron-right text-xs"></i></td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="8" class="!py-14 text-center">
+                                            <div class="tr-empty-icon"><i class="fas fa-right-left"></i></div>
+                                            <p class="text-gray-500 font-medium">No transfers match your filters.</p>
+                                            @can('transfers.request')
+                                                <a href="{{ route('transfers.create') }}" class="mi-btn-orange mt-4 inline-flex">
+                                                    <i class="fas fa-plus text-xs"></i> New Transfer
+                                                </a>
+                                            @endcan
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    @if ($requests->hasPages())
+                        <div class="mi-card-foot">{{ $requests->links() }}</div>
+                    @endif
+                </div>
+            </div>
+
+            @include('transfers.partials.index-guide')
+        </div>
+    </div>
+</x-app-layout>

@@ -61,10 +61,25 @@ class Approval extends Model
             return $query;
         }
 
-        return $query->where(function ($q) use ($term) {
-            $q->where('notes', 'like', "%{$term}%")
-                ->orWhereHas('requester', fn ($rq) => $rq->where('name', 'like', "%{$term}%"))
-                ->orWhereHas('currentApprover', fn ($aq) => $aq->where('name', 'like', "%{$term}%"));
+        $like = '%'.$term.'%';
+
+        return $query->where(function ($q) use ($term, $like) {
+            $q->where('notes', 'like', $like)
+                ->orWhereHas('requester', fn ($rq) => $rq->where('name', 'like', $like))
+                ->orWhereHas('currentApprover', fn ($aq) => $aq->where('name', 'like', $like));
+
+            foreach (config('approvals.search_columns', []) as $model => $columns) {
+                $q->orWhere(function ($sub) use ($model, $columns, $like) {
+                    $sub->where('approvable_type', $model)
+                        ->whereHasMorph('approvable', [$model], function ($morph) use ($columns, $like) {
+                            $morph->where(function ($ref) use ($columns, $like) {
+                                foreach ($columns as $column) {
+                                    $ref->orWhere($column, 'like', $like);
+                                }
+                            });
+                        });
+                });
+            }
         });
     }
 
@@ -94,6 +109,12 @@ class Approval extends Model
 
     public function moduleLabel(): string
     {
+        $approvable = $this->approvable;
+
+        if ($approvable instanceof ReturnRecord) {
+            return $approvable->type === 'supplier' ? 'Supplier Return' : 'Customer Return';
+        }
+
         $key = $this->moduleKey();
 
         if ($key) {
@@ -105,6 +126,12 @@ class Approval extends Model
 
     public function moduleIcon(): string
     {
+        $approvable = $this->approvable;
+
+        if ($approvable instanceof ReturnRecord) {
+            return $approvable->type === 'supplier' ? 'fa-truck' : 'fa-user';
+        }
+
         $key = $this->moduleKey();
 
         if ($key) {

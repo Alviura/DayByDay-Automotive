@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\ReturnRecord;
 use App\Models\Sale;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -24,7 +25,6 @@ class StoreCustomerReturnRequest extends FormRequest
             'items.*.unit_price' => ['nullable', 'numeric', 'min:0'],
             'items.*.condition' => ['required', Rule::in(['good', 'damaged'])],
             'items.*.restock' => ['nullable', 'boolean'],
-            'items.*.replacement' => ['nullable', 'boolean'],
         ];
     }
 
@@ -48,8 +48,18 @@ class StoreCustomerReturnRequest extends FormRequest
                     continue;
                 }
 
-                if ((float) $line['quantity'] > (float) $saleItem->quantity) {
-                    $validator->errors()->add("items.{$index}.quantity", 'Return quantity exceeds sold quantity.');
+                $sold = (float) $saleItem->quantity;
+                $alreadyReturned = ReturnRecord::returnedQuantityForSaleProduct(
+                    $sale->id,
+                    (int) $line['product_id']
+                );
+                $remaining = $sold - $alreadyReturned;
+
+                if ((float) $line['quantity'] > $remaining) {
+                    $validator->errors()->add(
+                        "items.{$index}.quantity",
+                        'Return quantity exceeds remaining returnable quantity ('.number_format(max(0, $remaining), 2).').'
+                    );
                 }
             }
         });
@@ -57,6 +67,6 @@ class StoreCustomerReturnRequest extends FormRequest
 
     public function sale(): Sale
     {
-        return Sale::with('shop')->findOrFail($this->sale_id);
+        return Sale::with(['shop', 'items'])->findOrFail($this->sale_id);
     }
 }

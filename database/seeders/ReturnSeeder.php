@@ -21,25 +21,38 @@ class ReturnSeeder extends Seeder
             return;
         }
 
-        $supplierReturn = ReturnRecord::firstOrCreate(
+        $pendingReturn = ReturnRecord::firstOrCreate(
             ['return_number' => 'SRT-'.date('Y').'-9001'],
             [
                 'type' => 'supplier',
                 'supplier_id' => $supplier->id,
                 'warehouse_id' => $warehouse->id,
-                'reason' => 'Defective batch — demo supplier return pending approval.',
+                'reason' => 'Defective batch — demo supplier return awaiting approval.',
                 'status' => 'pending',
             ]
         );
 
-        if ($supplierReturn->items()->doesntExist()) {
-            ReturnItem::create([
-                'return_id' => $supplierReturn->id,
-                'product_id' => $product->id,
-                'quantity' => 2,
-                'condition' => 'damaged',
-                'restock' => false,
-            ]);
+        $draftReturn = ReturnRecord::firstOrCreate(
+            ['return_number' => 'SRT-'.date('Y').'-9000'],
+            [
+                'type' => 'supplier',
+                'supplier_id' => $supplier->id,
+                'warehouse_id' => $warehouse->id,
+                'reason' => 'Draft supplier return — not yet submitted.',
+                'status' => 'draft',
+            ]
+        );
+
+        foreach ([$pendingReturn, $draftReturn] as $supplierReturn) {
+            if ($supplierReturn->items()->doesntExist()) {
+                ReturnItem::create([
+                    'return_id' => $supplierReturn->id,
+                    'product_id' => $product->id,
+                    'quantity' => 2,
+                    'condition' => 'damaged',
+                    'restock' => false,
+                ]);
+            }
         }
     }
 }

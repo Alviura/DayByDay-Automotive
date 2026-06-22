@@ -160,8 +160,7 @@
                                             <a href="{{ route('units.edit', $unit) }}" class="mi-action edit" title="Edit">
                                                 <i class="fas fa-pen"></i>
                                             </a>
-                                            <form action="{{ route('units.destroy', $unit) }}" method="POST" class="inline"
-                                                  onsubmit="return confirm('Delete {{ addslashes($unit->name) }}?');">
+                                            <form action="{{ route('units.destroy', $unit) }}" method="POST" class="inline" data-confirm="Delete {{ addslashes($unit->name) }}?" data-confirm-variant="danger">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="mi-action del" title="Delete">
@@ -205,8 +204,7 @@
                         <div class="mi-grid-item-actions">
                             @can('master-data.manage')
                                 <a href="{{ route('units.edit', $unit) }}" class="mi-action edit"><i class="fas fa-pen"></i></a>
-                                <form action="{{ route('units.destroy', $unit) }}" method="POST" class="inline"
-                                      onsubmit="return confirm('Delete {{ addslashes($unit->name) }}?');">
+                                <form action="{{ route('units.destroy', $unit) }}" method="POST" class="inline" data-confirm="Delete {{ addslashes($unit->name) }}?" data-confirm-variant="danger">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="mi-action del" title="Delete">

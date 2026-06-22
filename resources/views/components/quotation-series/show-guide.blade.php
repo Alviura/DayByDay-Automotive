@@ -14,7 +14,7 @@
         $series->canConfirm() => ['tab' => 'order', 'label' => 'Confirm & approve order', 'icon' => 'fa-check'],
         $series->canGeneratePo() => ['tab' => 'workflow', 'label' => 'Generate purchase order', 'icon' => 'fa-file-invoice'],
         in_array($series->status, ['po_generated', 'approved']) => ['tab' => 'workflow', 'label' => 'Mark goods in transit', 'icon' => 'fa-truck'],
-        $series->status === 'in_transit' => ['tab' => 'workflow', 'label' => 'Receive goods & close', 'icon' => 'fa-box-open'],
+        $series->status === 'in_transit' => ['tab' => 'workflow', 'label' => 'Receive goods on PO', 'icon' => 'fa-box-open'],
         default => null,
     };
 @endphp

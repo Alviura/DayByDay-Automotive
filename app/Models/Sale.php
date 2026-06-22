@@ -16,6 +16,12 @@ class Sale extends Model
         'receipt_number',
         'shop_id',
         'user_id',
+        'sale_type',
+        'customer_account_id',
+        'vehicle_plate',
+        'customer_invoice_id',
+        'ordered_by',
+        'completed_by',
         'customer_name',
         'customer_phone',
         'subtotal',
@@ -27,6 +33,7 @@ class Sale extends Model
         'status',
         'payment_status',
         'sold_at',
+        'submitted_at',
         'reversed_by',
         'reversed_at',
         'notes',
@@ -40,6 +47,7 @@ class Sale extends Model
         'amount_paid' => 'decimal:2',
         'change_due' => 'decimal:2',
         'sold_at' => 'datetime',
+        'submitted_at' => 'datetime',
         'reversed_at' => 'datetime',
     ];
 
@@ -66,9 +74,34 @@ class Sale extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function customerAccount(): BelongsTo
+    {
+        return $this->belongsTo(CustomerAccount::class);
+    }
+
+    public function customerInvoice(): BelongsTo
+    {
+        return $this->belongsTo(CustomerInvoice::class);
+    }
+
+    public function orderedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'ordered_by');
+    }
+
+    public function completedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'completed_by');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(SaleItem::class);
+    }
+
+    public function returnRecords(): HasMany
+    {
+        return $this->hasMany(ReturnRecord::class, 'sale_id')->where('type', 'customer');
     }
 
     public function payments(): HasMany
@@ -94,10 +127,20 @@ class Sale extends Model
     public function statusLabel(): string
     {
         return match ($this->status) {
-            'held' => 'On Hold',
+            'held' => 'At Cash Desk',
             'completed' => 'Completed',
             'reversed' => 'Reversed',
             default => ucfirst($this->status),
+        };
+    }
+
+    public function statusBadgeClass(): string
+    {
+        return match ($this->status) {
+            'held' => 'sl-badge sl-badge-amber',
+            'completed' => 'sl-badge sl-badge-green',
+            'reversed' => 'sl-badge sl-badge-rose',
+            default => 'sl-badge sl-badge-slate',
         };
     }
 
@@ -124,5 +167,24 @@ class Sale extends Model
     public function isHeld(): bool
     {
         return $this->status === 'held';
+    }
+
+    public function isCredit(): bool
+    {
+        return $this->sale_type === 'credit';
+    }
+
+    public function isRetail(): bool
+    {
+        return $this->sale_type === 'retail';
+    }
+
+    public function saleTypeLabel(): string
+    {
+        return match ($this->sale_type) {
+            'credit' => 'On Account',
+            'retail' => 'Retail',
+            default => ucfirst($this->sale_type ?? 'retail'),
+        };
     }
 }

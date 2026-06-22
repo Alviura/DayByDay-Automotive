@@ -166,7 +166,7 @@
                 <i class="fas fa-diagram-project"></i>
                 <div>
                     <strong>Post-approval workflow.</strong>
-                    Generate purchase orders, mark in transit, receive goods, and close the series when complete.
+                    Generate purchase orders, mark in transit, and receive goods — the series closes automatically when all POs are complete.
                 </div>
             </div>
             @include('quotation-series.partials.workflow-tab', ['workflowSteps' => $workflowSteps])

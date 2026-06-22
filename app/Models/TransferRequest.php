@@ -167,11 +167,35 @@ class TransferRequest extends Model implements ApprovableDocument
             'approved' => 'Approved',
             'rejected' => 'Rejected',
             'returned' => 'Returned',
-            'dispatched' => 'Dispatched',
+            'dispatched' => 'In Transit',
             'completed' => 'Completed',
             'cancelled' => 'Cancelled',
             default => ucfirst($this->status),
         };
+    }
+
+    public function statusBadgeClass(): string
+    {
+        return match ($this->status) {
+            'draft', 'returned' => 'tr-badge tr-badge-slate',
+            'pending' => 'tr-badge tr-badge-amber',
+            'approved' => 'tr-badge tr-badge-blue',
+            'dispatched' => 'tr-badge tr-badge-indigo',
+            'completed' => 'tr-badge tr-badge-green',
+            'rejected' => 'tr-badge tr-badge-rose',
+            'cancelled' => 'tr-badge tr-badge-slate',
+            default => 'tr-badge tr-badge-slate',
+        };
+    }
+
+    public function isWarehouseSource(): bool
+    {
+        return $this->source instanceof Warehouse;
+    }
+
+    public function isWarehouseDestination(): bool
+    {
+        return $this->destination instanceof Warehouse;
     }
 
     public function routeLabel(): string

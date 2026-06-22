@@ -54,6 +54,14 @@ class ReturnService
                         throw new InventoryException('Warehouse is required for supplier returns.');
                     }
 
+                    $available = $this->inventory->available($item->product, $return->warehouse);
+
+                    if ($qty > $available) {
+                        throw new InventoryException(
+                            "Insufficient stock for {$item->product->part_number}. Available: ".number_format($available, 2)
+                        );
+                    }
+
                     $balance = $this->inventory->getBalance($item->product, $return->warehouse);
                     $unitCost = (float) ($balance?->average_cost ?? $item->product->cost_price ?? 0);
 

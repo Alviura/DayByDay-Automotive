@@ -198,8 +198,7 @@
                                             <a href="{{ route('categories.edit', $category) }}" class="mi-action edit" title="Edit">
                                                 <i class="fas fa-pen"></i>
                                             </a>
-                                            <form action="{{ route('categories.destroy', $category) }}" method="POST" class="inline"
-                                                  onsubmit="return confirm('Delete {{ addslashes($category->name) }}?');">
+                                            <form action="{{ route('categories.destroy', $category) }}" method="POST" class="inline" data-confirm="Delete {{ addslashes($category->name) }}?" data-confirm-variant="danger">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="mi-action del" title="Delete">

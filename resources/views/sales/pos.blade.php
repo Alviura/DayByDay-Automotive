@@ -14,7 +14,6 @@
                 'name' => $i->product->name,
                 'quantity' => (float) $i->quantity,
                 'unit_price' => (float) $i->unit_price,
-                'discount' => (float) $i->discount,
                 'available' => null,
                 'unit' => $i->product->unit?->abbreviation,
             ])->values() : []),
@@ -96,7 +95,6 @@
                                     <th>Product</th>
                                     <th>Qty</th>
                                     <th>Price</th>
-                                    <th>Disc</th>
                                     <th>Line</th>
                                     <th></th>
                                 </tr>
@@ -110,13 +108,12 @@
                                         </td>
                                         <td><input type="number" step="0.01" min="0.01" class="mi-input w-20" x-model.number="line.quantity" @change="recalc()"></td>
                                         <td><input type="number" step="0.01" min="0" class="mi-input w-24" x-model.number="line.unit_price" @change="recalc()"></td>
-                                        <td><input type="number" step="0.01" min="0" class="mi-input w-20" x-model.number="line.discount" @change="recalc()"></td>
                                         <td class="font-medium" x-text="formatMoney(lineTotal(line))"></td>
                                         <td><button type="button" @click="removeLine(index)" class="mi-action del"><i class="fas fa-trash"></i></button></td>
                                     </tr>
                                 </template>
                                 <tr x-show="!cart.length">
-                                    <td colspan="6" class="text-center py-10 text-gray-400">Search and add products to begin.</td>
+                                    <td colspan="5" class="text-center py-10 text-gray-400">Search and add products to begin.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -132,7 +129,6 @@
                     <div class="mi-card p-4">
                         <dl class="space-y-2 text-sm">
                             <div class="flex justify-between"><dt class="text-gray-500">Subtotal</dt><dd x-text="formatMoney(totals.subtotal)"></dd></div>
-                            <div class="flex justify-between"><dt class="text-gray-500">Discount</dt><dd x-text="'-' + formatMoney(totals.discount)"></dd></div>
                             <div class="flex justify-between" x-show="taxRate > 0"><dt class="text-gray-500">Tax</dt><dd x-text="formatMoney(totals.tax)"></dd></div>
                             <div class="flex justify-between text-lg font-bold border-t pt-2"><dt>Total</dt><dd class="text-orange-600" x-text="formatMoney(totals.total)"></dd></div>
                         </dl>
@@ -146,7 +142,6 @@
                                         <input type="hidden" :name="`items[${i}][product_id]`" :value="line.product_id">
                                         <input type="hidden" :name="`items[${i}][quantity]`" :value="line.quantity">
                                         <input type="hidden" :name="`items[${i}][unit_price]`" :value="line.unit_price">
-                                        <input type="hidden" :name="`items[${i}][discount]`" :value="line.discount || 0">
                                     </div>
                                 </template>
                                 <input type="hidden" name="customer_name" :value="customerName">
@@ -180,7 +175,6 @@
                             <input type="hidden" :name="`items[${i}][product_id]`" :value="line.product_id">
                             <input type="hidden" :name="`items[${i}][quantity]`" :value="line.quantity">
                             <input type="hidden" :name="`items[${i}][unit_price]`" :value="line.unit_price">
-                            <input type="hidden" :name="`items[${i}][discount]`" :value="line.discount || 0">
                         </div>
                     </template>
                     <input type="hidden" name="customer_name" :value="customerName">
@@ -241,7 +235,7 @@
                 notes: config.notes || '',
                 paymentOpen: false,
                 payments: [{ method: 'cash', amount: 0, reference: '' }],
-                totals: { subtotal: 0, discount: 0, tax: 0, total: 0 },
+                totals: { subtotal: 0, tax: 0, total: 0 },
 
                 init() {
                     this.recalc();
@@ -271,7 +265,6 @@
                             unit_price: parseFloat(product.max_selling_price),
                             min_selling_price: parseFloat(product.min_selling_price),
                             max_selling_price: parseFloat(product.max_selling_price),
-                            discount: 0,
                             available: product.available,
                             unit: product.unit,
                         });
@@ -293,16 +286,14 @@
                 },
 
                 lineTotal(line) {
-                    return Math.max(0, (line.quantity * line.unit_price) - (line.discount || 0));
+                    return Math.max(0, line.quantity * line.unit_price);
                 },
 
                 recalc() {
                     const subtotal = this.cart.reduce((s, l) => s + (l.quantity * l.unit_price), 0);
-                    const discount = this.cart.reduce((s, l) => s + (parseFloat(l.discount) || 0), 0);
-                    const taxable = Math.max(0, subtotal - discount);
-                    const tax = Math.round(taxable * this.taxRate * 100) / 100;
-                    const total = Math.round((taxable + tax) * 100) / 100;
-                    this.totals = { subtotal, discount, tax, total };
+                    const tax = Math.round(subtotal * this.taxRate * 100) / 100;
+                    const total = Math.round((subtotal + tax) * 100) / 100;
+                    this.totals = { subtotal, tax, total };
                 },
 
                 paidTotal() {

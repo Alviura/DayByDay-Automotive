@@ -151,8 +151,7 @@
                                             <a href="{{ route('product-names.edit', $productName) }}" class="mi-action edit" title="Edit">
                                                 <i class="fas fa-pen"></i>
                                             </a>
-                                            <form action="{{ route('product-names.destroy', $productName) }}" method="POST" class="inline"
-                                                  onsubmit="return confirm('Delete {{ addslashes($productName->name) }}?');">
+                                            <form action="{{ route('product-names.destroy', $productName) }}" method="POST" class="inline" data-confirm="Delete {{ addslashes($productName->name) }}?" data-confirm-variant="danger">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="mi-action del" title="Delete">
@@ -191,8 +190,7 @@
                         <div class="mi-grid-item-actions">
                             @can('master-data.manage')
                                 <a href="{{ route('product-names.edit', $productName) }}" class="mi-action edit"><i class="fas fa-pen"></i></a>
-                                <form action="{{ route('product-names.destroy', $productName) }}" method="POST" class="inline"
-                                      onsubmit="return confirm('Delete {{ addslashes($productName->name) }}?');">
+                                <form action="{{ route('product-names.destroy', $productName) }}" method="POST" class="inline" data-confirm="Delete {{ addslashes($productName->name) }}?" data-confirm-variant="danger">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="mi-action del" title="Delete">

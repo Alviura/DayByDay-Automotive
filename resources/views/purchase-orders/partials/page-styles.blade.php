@@ -109,4 +109,150 @@
         width: 2.25rem; height: 2.25rem; border-radius: 8px;
         display: flex; align-items: center; justify-content: center; font-size: .85rem;
     }
+
+    /* ── Show sidebar ── */
+    .po-sidebar { display: flex; flex-direction: column; }
+
+    .po-sidebar-hero {
+        display: flex; align-items: center; gap: .85rem;
+        padding: 1.1rem 1.15rem;
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        border-bottom: 1px solid #bfdbfe;
+    }
+    .po-sidebar-hero-icon {
+        width: 2.75rem; height: 2.75rem; border-radius: 12px; flex-shrink: 0;
+        background: #fff; border: 1px solid #93c5fd;
+        color: #2563eb; font-size: 1rem;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, .12);
+    }
+    .po-sidebar-hero-label {
+        font-size: .62rem; font-weight: 700; letter-spacing: .06em;
+        text-transform: uppercase; color: #1d4ed8; opacity: .85;
+    }
+    .po-sidebar-hero-title {
+        font-size: .92rem; font-weight: 700; color: #1e3a8a;
+        line-height: 1.3; margin-top: .1rem;
+    }
+    .po-sidebar-hero-sub {
+        font-size: .7rem; color: #3b82f6; margin-top: .15rem;
+    }
+    .po-sidebar-hero-stat {
+        flex-shrink: 0; text-align: center;
+        background: #fff; border: 1px solid #bfdbfe;
+        border-radius: 10px; padding: .4rem .55rem; min-width: 3.25rem;
+    }
+    .po-sidebar-hero-stat-val {
+        display: block; font-size: 1rem; font-weight: 800; color: #2563eb; line-height: 1;
+    }
+    .po-sidebar-hero-stat-lbl {
+        display: block; font-size: .55rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .04em; color: #93c5fd; margin-top: .2rem;
+    }
+
+    .po-sidebar-body { padding: .35rem 0 .5rem; }
+
+    .po-sidebar-block { padding: .85rem 1.15rem .75rem; }
+    .po-sidebar-block + .po-sidebar-block,
+    .po-sidebar-note + .po-sidebar-block {
+        border-top: 1px solid #f3f4f6;
+    }
+
+    .po-sidebar-block-title {
+        display: flex; align-items: center; gap: .4rem;
+        font-size: .68rem; font-weight: 700; letter-spacing: .05em;
+        text-transform: uppercase; color: #9ca3af;
+        margin-bottom: .65rem;
+    }
+    .po-sidebar-block-title i { font-size: .65rem; }
+
+    .po-detail-list { display: flex; flex-direction: column; gap: .5rem; margin: 0; }
+    .po-detail-row {
+        display: grid; grid-template-columns: 4.75rem 1fr;
+        gap: .65rem; align-items: baseline;
+        font-size: .8rem; line-height: 1.35;
+    }
+    .po-detail-row dt { color: #9ca3af; font-weight: 500; margin: 0; }
+    .po-detail-row dd { color: #374151; margin: 0; text-align: left; word-break: break-word; }
+
+    .po-sidebar-note {
+        margin: 0 1.15rem .85rem;
+        padding: .75rem .85rem;
+        background: #f9fafb; border: 1px solid #f3f4f6;
+        border-radius: 10px;
+    }
+    .po-sidebar-note-label {
+        font-size: .65rem; font-weight: 700; color: #9ca3af;
+        text-transform: uppercase; letter-spacing: .04em;
+        display: flex; align-items: center; gap: .35rem; margin-bottom: .35rem;
+    }
+    .po-sidebar-note-text { font-size: .78rem; color: #4b5563; line-height: 1.45; margin: 0; }
+
+    .po-doc-stack { display: flex; flex-direction: column; gap: .45rem; }
+    .po-doc-tile {
+        display: flex; align-items: center; gap: .65rem;
+        padding: .65rem .75rem; border-radius: 10px;
+        border: 1px solid #f0f0f0; background: #fafafa;
+        text-decoration: none; color: inherit;
+        transition: all .15s ease;
+    }
+    .po-doc-tile:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,.06); }
+    .po-doc-tile-orange:hover  { border-color: #fed7aa; background: #fff7ed; }
+    .po-doc-tile-emerald:hover { border-color: #a7f3d0; background: #ecfdf5; }
+    .po-doc-tile-muted { opacity: .65; }
+    .po-doc-tile-muted .po-doc-tile-title { text-decoration: line-through; color: #9ca3af; }
+
+    .po-doc-tile-icon {
+        width: 2rem; height: 2rem; border-radius: 8px; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center; font-size: .8rem;
+    }
+    .po-doc-tile-orange .po-doc-tile-icon  { background: #ffedd5; color: #ea580c; border: 1px solid #fed7aa; }
+    .po-doc-tile-emerald .po-doc-tile-icon { background: #d1fae5; color: #059669; border: 1px solid #a7f3d0; }
+
+    .po-doc-tile-label {
+        font-size: .58rem; font-weight: 700; letter-spacing: .05em;
+        text-transform: uppercase; color: #9ca3af; line-height: 1;
+    }
+    .po-doc-tile-title {
+        font-size: .82rem; font-weight: 700; color: #111827;
+        margin-top: .2rem; line-height: 1.25;
+    }
+    .po-doc-tile-sub {
+        font-size: .68rem; color: #9ca3af; margin-top: .12rem;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .po-doc-tile-arrow { font-size: .6rem; color: #d1d5db; flex-shrink: 0; margin-left: auto; }
+    .po-doc-tile:hover .po-doc-tile-arrow { color: #9ca3af; }
+
+    .po-sidebar-empty {
+        text-align: center; padding: 1.25rem .5rem;
+        color: #9ca3af; font-size: .75rem;
+    }
+    .po-sidebar-empty i { font-size: 1.25rem; color: #d1d5db; display: block; margin-bottom: .35rem; }
+    .po-sidebar-empty p { margin: 0; }
+
+    .po-receipt-new-btn {
+        display: inline-flex; align-items: center; gap: .35rem;
+        padding: .35rem .65rem; border-radius: 8px;
+        font-size: .68rem; font-weight: 700; letter-spacing: .02em;
+        color: #fff; text-decoration: none;
+        background: linear-gradient(135deg, #fb923c, #ea580c);
+        border: 1px solid #c2410c;
+        box-shadow: 0 1px 4px rgba(234, 88, 12, .25);
+        transition: all .15s ease;
+        white-space: nowrap;
+    }
+    .po-receipt-new-btn:hover {
+        background: linear-gradient(135deg, #ea580c, #c2410c);
+        box-shadow: 0 2px 8px rgba(234, 88, 12, .3);
+        color: #fff;
+    }
+    .po-receipt-hint {
+        display: flex; align-items: flex-start; gap: .5rem;
+        margin-bottom: .65rem; padding: .65rem .75rem;
+        border-radius: 8px; font-size: .72rem; line-height: 1.45;
+        background: linear-gradient(135deg, #fffbeb, #fef3c7);
+        border: 1px solid #fde68a; color: #92400e;
+    }
+    .po-receipt-hint i { margin-top: .1rem; flex-shrink: 0; color: #d97706; }
 </style>

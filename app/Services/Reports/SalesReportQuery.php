@@ -19,7 +19,6 @@ class SalesReportQuery
         $summary = [
             'transaction_count' => (clone $salesQuery)->count(),
             'gross_revenue' => (float) (clone $salesQuery)->sum('total'),
-            'discounts' => (float) (clone $salesQuery)->sum('discount_total'),
             'tax_collected' => (float) (clone $salesQuery)->sum('tax_total'),
             'avg_ticket' => 0,
         ];

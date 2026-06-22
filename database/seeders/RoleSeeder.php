@@ -39,7 +39,9 @@ class RoleSeeder extends Seeder
             // Distribution / transfers
             'transfers.view', 'transfers.request', 'transfers.approve', 'transfers.dispatch', 'transfers.receive',
             // Sales
-            'sales.view', 'sales.create', 'sales.hold', 'sales.reverse', 'sales.discount.approve',
+            'sales.view', 'sales.create', 'sales.hold', 'sales.reverse',
+            'customer_accounts.view', 'customer_accounts.manage',
+            'customer_invoices.view', 'customer_invoices.manage',
             // Returns
             'returns.view', 'returns.create', 'returns.approve',
             // Reporting
@@ -47,6 +49,10 @@ class RoleSeeder extends Seeder
             // Audit & approvals
             'audit.view',
             'approvals.act',
+            // HR & Payroll
+            'employees.view', 'employees.manage',
+            'payroll.view', 'payroll.run', 'payroll.lock',
+            'payslips.view_own',
         ];
 
         foreach ($permissions as $permission) {
@@ -62,11 +68,21 @@ class RoleSeeder extends Seeder
             'shops.view',
             'products.view',
             'inventory.view',
-            'sales.view', 'sales.create', 'sales.hold',
+            'sales.view', 'sales.create', 'sales.hold', 'sales.reverse',
+            'customer_accounts.view', 'customer_accounts.manage',
+            'customer_invoices.view', 'customer_invoices.manage',
             'returns.view', 'returns.create',
             'transfers.view', 'transfers.request', 'transfers.receive',
             'reports.view',
             'approvals.act',
+        ]);
+
+        $shopAttendant = Role::firstOrCreate(['name' => 'Shop Attendant', 'guard_name' => 'web']);
+        $shopAttendant->syncPermissions([
+            'dashboard.view',
+            'products.view',
+            'sales.view', 'sales.create', 'sales.hold',
+            'payslips.view_own',
         ]);
     }
 }

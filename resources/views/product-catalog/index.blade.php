@@ -153,7 +153,7 @@
                                         @can('master-data.manage')
                                             <div class="flex items-center gap-1.5">
                                                 <a href="{{ route('product-names.edit', $productName) }}" class="mi-action edit"><i class="fas fa-pen"></i></a>
-                                                <form action="{{ route('product-names.destroy', $productName) }}" method="POST" class="inline" onsubmit="return confirm('Delete {{ addslashes($productName->name) }}?');">
+                                                <form action="{{ route('product-names.destroy', $productName) }}" method="POST" class="inline" data-confirm="Delete {{ addslashes($productName->name) }}?" data-confirm-variant="danger">
                                                     @csrf @method('DELETE')
                                                     <button type="submit" class="mi-action del"><i class="fas fa-trash"></i></button>
                                                 </form>
@@ -264,7 +264,7 @@
                                         @can('master-data.manage')
                                             <div class="flex items-center gap-1.5">
                                                 <a href="{{ route('units.edit', $unit) }}" class="mi-action edit"><i class="fas fa-pen"></i></a>
-                                                <form action="{{ route('units.destroy', $unit) }}" method="POST" class="inline" onsubmit="return confirm('Delete {{ addslashes($unit->name) }}?');">
+                                                <form action="{{ route('units.destroy', $unit) }}" method="POST" class="inline" data-confirm="Delete {{ addslashes($unit->name) }}?" data-confirm-variant="danger">
                                                     @csrf @method('DELETE')
                                                     <button type="submit" class="mi-action del"><i class="fas fa-trash"></i></button>
                                                 </form>

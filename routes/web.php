@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\CustomerAccountController;
+use App\Http\Controllers\CustomerInvoiceController;
+use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\CategoryController;
@@ -19,10 +23,11 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\StockAdjustmentController;
-use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\SupplierReturnController;
 use App\Http\Controllers\SupplierController;
-use App\Http\Controllers\TransferRequestController;
+use App\Http\Controllers\TransferController;
+use App\Models\StockTransfer;
+use App\Models\TransferRequest;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleCatalogController;
@@ -115,41 +120,66 @@ Route::middleware('auth')->group(function () {
     })->where('path', '.+');
 
     Route::resource('purchase-orders', PurchaseOrderController::class)->only(['index', 'show']);
+    Route::post('purchase-orders/{purchase_order}/close-short', [PurchaseOrderController::class, 'closeShort'])->name('purchase-orders.close-short');
     Route::get('goods-receipts', [GoodsReceiptController::class, 'index'])->name('goods-receipts.index');
     Route::get('purchase-orders/{purchase_order}/goods-receipts/create', [GoodsReceiptController::class, 'create'])->name('goods-receipts.create');
     Route::post('purchase-orders/{purchase_order}/goods-receipts', [GoodsReceiptController::class, 'store'])->name('goods-receipts.store');
     Route::get('goods-receipts/{goods_receipt_note}', [GoodsReceiptController::class, 'show'])->name('goods-receipts.show');
+    Route::post('goods-receipts/{goods_receipt_note}/void', [GoodsReceiptController::class, 'void'])->name('goods-receipts.void');
 
     // Distribution & transfers (M14)
-    Route::resource('transfer-requests', TransferRequestController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
-    Route::post('transfer-requests/{transfer_request}/submit', [TransferRequestController::class, 'submit'])->name('transfer-requests.submit');
-    Route::post('transfer-requests/{transfer_request}/dispatch', [TransferRequestController::class, 'dispatch'])->name('transfer-requests.dispatch');
-    Route::get('stock-transfers', [StockTransferController::class, 'index'])->name('stock-transfers.index');
-    Route::get('stock-transfers/{stock_transfer}', [StockTransferController::class, 'show'])->name('stock-transfers.show');
-    Route::get('stock-transfers/{stock_transfer}/receive', [StockTransferController::class, 'receiveForm'])->name('stock-transfers.receive');
-    Route::post('stock-transfers/{stock_transfer}/receive', [StockTransferController::class, 'receive'])->name('stock-transfers.receive.store');
+    Route::get('transfers/availability', [TransferController::class, 'availability'])->name('transfers.availability');
+    Route::resource('transfers', TransferController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
+    Route::post('transfers/{transfer}/submit', [TransferController::class, 'submit'])->name('transfers.submit');
+    Route::post('transfers/{transfer}/dispatch', [TransferController::class, 'dispatch'])->name('transfers.dispatch');
+    Route::get('transfers/{transfer}/receive', [TransferController::class, 'receiveForm'])->name('transfers.receive');
+    Route::post('transfers/{transfer}/receive', [TransferController::class, 'receive'])->name('transfers.receive.store');
+    Route::redirect('transfer-requests', '/transfers');
+    Route::redirect('stock-transfers', '/transfers');
+    Route::get('transfer-requests/{transferRequest}', fn (TransferRequest $transferRequest) => redirect()->route('transfers.show', $transferRequest));
+    Route::get('stock-transfers/{stockTransfer}', function (StockTransfer $stockTransfer) {
+        if ($stockTransfer->transferRequest) {
+            return redirect()->route('transfers.show', $stockTransfer->transferRequest);
+        }
+
+        return redirect()->route('transfers.index');
+    });
 
     // Sales / POS (M15)
     Route::get('sales/pos', [SaleController::class, 'pos'])->name('sales.pos');
+    Route::get('sales/order', [SaleController::class, 'order'])->name('sales.order');
+    Route::get('sales/desk', [SaleController::class, 'desk'])->name('sales.desk');
+    Route::get('sales/desk/{sale}', [SaleController::class, 'deskCheckout'])->name('sales.desk.checkout');
     Route::get('sales/pos/search', [SaleController::class, 'searchProducts'])->name('sales.search');
     Route::post('sales/hold', [SaleController::class, 'hold'])->name('sales.hold');
     Route::post('sales/checkout', [SaleController::class, 'checkout'])->name('sales.checkout');
     Route::post('sales/{sale}/complete', [SaleController::class, 'complete'])->name('sales.complete');
     Route::post('sales/{sale}/reverse', [SaleController::class, 'reverse'])->name('sales.reverse');
     Route::post('sales/{sale}/abandon', [SaleController::class, 'abandon'])->name('sales.abandon');
+    Route::post('sales/{sale}/issue-on-account', [SaleController::class, 'issueOnAccount'])->name('sales.issue-on-account');
     Route::get('sales', [SaleController::class, 'index'])->name('sales.index');
     Route::get('sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
     Route::get('receipts/{sale}', [ReceiptController::class, 'show'])->name('receipts.show');
+
+    // Customer accounts & fleet billing
+    Route::resource('customer-accounts', CustomerAccountController::class);
+    Route::get('customer-invoices', [CustomerInvoiceController::class, 'index'])->name('customer-invoices.index');
+    Route::get('customer-invoices/create', [CustomerInvoiceController::class, 'create'])->name('customer-invoices.create');
+    Route::post('customer-invoices', [CustomerInvoiceController::class, 'store'])->name('customer-invoices.store');
+    Route::get('customer-invoices/{customer_invoice}', [CustomerInvoiceController::class, 'show'])->name('customer-invoices.show');
+    Route::post('customer-invoices/{customer_invoice}/payments', [CustomerInvoiceController::class, 'recordPayment'])->name('customer-invoices.record-payment');
 
     // Returns (M16)
     Route::get('customer-returns', [CustomerReturnController::class, 'index'])->name('customer-returns.index');
     Route::get('customer-returns/create', [CustomerReturnController::class, 'create'])->name('customer-returns.create');
     Route::post('customer-returns', [CustomerReturnController::class, 'store'])->name('customer-returns.store');
+    Route::get('customer-returns/sales/search', [CustomerReturnController::class, 'searchSales'])->name('customer-returns.search-sales');
     Route::get('customer-returns/sales/{sale}/items', [CustomerReturnController::class, 'saleItems'])->name('customer-returns.sale-items');
     Route::get('customer-returns/{customer_return}', [CustomerReturnController::class, 'show'])->name('customer-returns.show');
     Route::post('customer-returns/{customer_return}/submit', [CustomerReturnController::class, 'submit'])->name('customer-returns.submit');
     Route::delete('customer-returns/{customer_return}', [CustomerReturnController::class, 'destroy'])->name('customer-returns.destroy');
 
+    Route::get('supplier-returns/availability', [SupplierReturnController::class, 'availability'])->name('supplier-returns.availability');
     Route::get('supplier-returns', [SupplierReturnController::class, 'index'])->name('supplier-returns.index');
     Route::get('supplier-returns/create', [SupplierReturnController::class, 'create'])->name('supplier-returns.create');
     Route::post('supplier-returns', [SupplierReturnController::class, 'store'])->name('supplier-returns.store');
@@ -169,6 +199,16 @@ Route::middleware('auth')->group(function () {
     // Audit log (M18)
     Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     Route::get('audit-logs/{audit_log}', [AuditLogController::class, 'show'])->name('audit-logs.show');
+
+    // HR & Payroll (M21–M22)
+    Route::resource('employees', EmployeeController::class);
+    Route::get('payroll', [PayrollController::class, 'index'])->name('payroll.index');
+    Route::post('payroll/periods', [PayrollController::class, 'storePeriod'])->name('payroll.periods.store');
+    Route::get('payroll/periods/{period}', [PayrollController::class, 'showPeriod'])->name('payroll.periods.show');
+    Route::post('payroll/periods/{period}/generate', [PayrollController::class, 'generate'])->name('payroll.periods.generate');
+    Route::post('payroll/runs/{run}/lock', [PayrollController::class, 'lock'])->name('payroll.runs.lock');
+    Route::post('payroll/runs/{run}/mark-paid', [PayrollController::class, 'markPaid'])->name('payroll.runs.mark-paid');
+    Route::get('payroll/payslips/{line}', [PayrollController::class, 'payslip'])->name('payroll.payslip');
 });
 
 require __DIR__.'/auth.php';

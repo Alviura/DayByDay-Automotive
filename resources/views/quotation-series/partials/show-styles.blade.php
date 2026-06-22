@@ -133,6 +133,30 @@
         text-decoration: none; color: inherit; transition: all .15s;
     }
     .qs-link-card:hover { border-color: #fed7aa; background: #fffbeb; }
+    .qs-link-card--voided {
+        opacity: .72;
+        background: #fafafa;
+        border-color: #e5e7eb;
+    }
+    .qs-link-card--voided:hover {
+        border-color: #fecaca;
+        background: #fff1f2;
+    }
+    .qs-link-card--voided .qs-link-card-title {
+        text-decoration: line-through;
+        color: #9ca3af;
+    }
+    .qs-link-card--voided .qs-link-card-icon {
+        background: #f1f5f9 !important;
+        color: #94a3b8 !important;
+    }
+    .qs-link-card-title { font-size: .875rem; font-weight: 600; color: #111827; line-height: 1.3; }
+    .qs-grn-badge-voided {
+        display: inline-flex; align-items: center; gap: .25rem;
+        font-size: .62rem; font-weight: 700; letter-spacing: .04em;
+        text-transform: uppercase; color: #be123c;
+        background: #ffe4e6; border-radius: 9999px; padding: .12rem .45rem;
+    }
     .qs-link-card-icon {
         width: 2.25rem; height: 2.25rem; border-radius: 8px;
         display: flex; align-items: center; justify-content: center; font-size: .85rem;

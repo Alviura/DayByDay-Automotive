@@ -6,7 +6,7 @@
         ['key' => 'received', 'label' => 'Received', 'icon' => 'fa-box-open'],
     ];
     $currentStepIdx = match (true) {
-        $purchaseOrder->status === 'received' => 3,
+        in_array($purchaseOrder->status, ['received', 'closed_short'], true) => 3,
         $purchaseOrder->status === 'partially_received' => 3,
         $purchaseOrder->delivery_status === 'delivered' => 2,
         $purchaseOrder->delivery_status === 'in_transit' => 1,
@@ -23,7 +23,7 @@
         @include('purchase-orders.partials.page-styles')
     @endpush
 
-    <div class="mi-page space-y-5">
+    <div class="mi-page space-y-5" x-data="{ closeShortOpen: {{ $errors->has('reason') ? 'true' : 'false' }} }">
 
         {{-- Header --}}
         <div class="flex flex-wrap items-start justify-between gap-4">
@@ -55,8 +55,53 @@
                         </a>
                     @endcan
                 @endif
+                @if ($purchaseOrder->canCloseShort())
+                    @can('procurement.manage')
+                        <button type="button" class="mi-btn-ghost" @click="closeShortOpen = true">
+                            <i class="fas fa-flag-checkered text-xs"></i> Close Short
+                        </button>
+                    @endcan
+                @endif
             </div>
         </div>
+
+        @if ($purchaseOrder->status === 'closed_short')
+            <div class="mi-card p-4 border-l-4 border-indigo-500 bg-indigo-50/50">
+                <div class="flex items-start gap-3 text-sm text-indigo-900">
+                    <i class="fas fa-flag-checkered mt-0.5"></i>
+                    <div>
+                        <p class="font-semibold">Closed short on {{ $purchaseOrder->closed_short_at?->format('d M Y H:i') }}
+                            @if ($purchaseOrder->closedShortBy) · {{ $purchaseOrder->closedShortBy->name }} @endif
+                        </p>
+                        <p class="mt-1">{{ number_format($purchaseOrder->totalShortQuantity(), 0) }} units outstanding will not be received.</p>
+                        @if ($purchaseOrder->close_short_reason)
+                            <p class="mt-2 text-indigo-800/80">{{ $purchaseOrder->close_short_reason }}</p>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if ($purchaseOrder->canCloseShort())
+            @can('procurement.manage')
+                <div x-show="closeShortOpen" x-cloak class="mi-card p-5 border border-amber-200 bg-amber-50/40">
+                    <p class="text-sm font-semibold text-gray-800 mb-1">Close purchase order short</p>
+                    <p class="text-xs text-gray-500 mb-4">Accept that {{ number_format($purchaseOrder->totalShortQuantity(), 0) }} remaining units will never be delivered. No further receipts will be allowed.</p>
+                    <form method="POST" action="{{ route('purchase-orders.close-short', $purchaseOrder) }}" class="space-y-3">
+                        @csrf
+                        <div>
+                            <label class="mi-field-label">Reason <span class="text-rose-500">*</span></label>
+                            <textarea name="reason" rows="3" class="mi-input block w-full" required minlength="10" placeholder="e.g. Supplier confirmed balance will not be shipped…">{{ old('reason') }}</textarea>
+                            <x-input-error :messages="$errors->get('reason')" class="mt-1.5" />
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit" class="mi-btn-orange"><i class="fas fa-flag-checkered text-xs"></i> Confirm Close Short</button>
+                            <button type="button" class="mi-btn-ghost" @click="closeShortOpen = false">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            @endcan
+        @endif
 
         {{-- Delivery workflow --}}
         @if ($purchaseOrder->status !== 'cancelled')
@@ -115,7 +160,7 @@
         </div>
 
         {{-- Split layout --}}
-        <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
+        <div class="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5">
 
             {{-- Line items --}}
             <div class="mi-card">
@@ -175,106 +220,11 @@
             </div>
 
             {{-- Sidebar --}}
-            <div class="space-y-4">
+            @include('purchase-orders.partials.show-sidebar', [
+                'purchaseOrder' => $purchaseOrder,
+                'receiptPct' => $receiptPct,
+            ])
 
-                {{-- PO details --}}
-                <div class="mi-card p-5 space-y-3">
-                    <p class="po-section-title"><i class="fas fa-circle-info"></i> PO Details</p>
-                    <dl class="space-y-2 text-sm">
-                        <div class="flex justify-between gap-2">
-                            <dt class="text-gray-500">PO Number</dt>
-                            <dd class="font-semibold text-gray-800">{{ $purchaseOrder->po_number }}</dd>
-                        </div>
-                        <div class="flex justify-between gap-2">
-                            <dt class="text-gray-500">Supplier</dt>
-                            <dd class="font-medium text-gray-800 text-right">{{ $purchaseOrder->supplier?->name }}</dd>
-                        </div>
-                        <div class="flex justify-between gap-2">
-                            <dt class="text-gray-500">Order Date</dt>
-                            <dd class="text-gray-800">{{ $purchaseOrder->order_date?->format('d M Y') ?? '—' }}</dd>
-                        </div>
-                        <div class="flex justify-between gap-2">
-                            <dt class="text-gray-500">Expected</dt>
-                            <dd class="text-gray-800">{{ $purchaseOrder->expected_date?->format('d M Y') ?? '—' }}</dd>
-                        </div>
-                        <div class="flex justify-between gap-2">
-                            <dt class="text-gray-500">Created By</dt>
-                            <dd class="text-gray-800">{{ $purchaseOrder->creator?->name ?? '—' }}</dd>
-                        </div>
-                    </dl>
-                    @if ($purchaseOrder->notes)
-                        <div class="pt-2 border-t border-gray-100">
-                            <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Notes</p>
-                            <p class="text-sm text-gray-600">{{ $purchaseOrder->notes }}</p>
-                        </div>
-                    @endif
-                </div>
-
-                {{-- Quotation series link --}}
-                @if ($purchaseOrder->quotationSeries)
-                    <div class="mi-card p-5">
-                        <p class="po-section-title mb-3"><i class="fas fa-folder-open"></i> Source Series</p>
-                        <a href="{{ route('quotation-series.show', $purchaseOrder->quotationSeries) }}" class="po-link-card">
-                            <div class="flex items-center gap-3 min-w-0">
-                                <div class="po-link-card-icon" style="background:#fff7ed;color:#ea580c;border:1px solid #fed7aa">
-                                    <i class="fas fa-file-invoice"></i>
-                                </div>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-gray-800 truncate">{{ $purchaseOrder->quotationSeries->displayName() }}</p>
-                                    <p class="text-xs text-gray-400">{{ $purchaseOrder->quotationSeries->series_number }}</p>
-                                </div>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
-                        </a>
-                    </div>
-                @endif
-
-                {{-- Goods receipts --}}
-                <div class="mi-card p-5">
-                    <div class="flex items-center justify-between mb-3">
-                        <p class="po-section-title"><i class="fas fa-truck-ramp-box"></i> Goods Receipts</p>
-                        @if ($purchaseOrder->canReceive())
-                            @can('procurement.manage')
-                                <a href="{{ route('goods-receipts.create', $purchaseOrder) }}" class="text-xs font-semibold text-orange-600 hover:text-orange-700">+ New GRN</a>
-                            @endcan
-                        @endif
-                    </div>
-                    @if ($purchaseOrder->goodsReceiptNotes->isNotEmpty())
-                        <div class="space-y-2">
-                            @foreach ($purchaseOrder->goodsReceiptNotes as $grn)
-                                <a href="{{ route('goods-receipts.show', $grn) }}" class="po-link-card">
-                                    <div class="flex items-center gap-3">
-                                        <div class="po-link-card-icon" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe">
-                                            <i class="fas fa-clipboard-check"></i>
-                                        </div>
-                                        <div>
-                                            <p class="text-sm font-semibold text-gray-800">{{ $grn->grn_number }}</p>
-                                            <p class="text-xs text-gray-400">
-                                                {{ $grn->received_at?->format('d M Y') ?? '—' }}
-                                                @if ($grn->warehouse) · {{ $grn->warehouse->name }} @endif
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
-                                </a>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="text-center py-6">
-                            <div class="po-empty-icon" style="width:2.5rem;height:2.5rem;font-size:.9rem"><i class="fas fa-box"></i></div>
-                            <p class="text-xs text-gray-400">No receipts recorded yet</p>
-                            @if ($purchaseOrder->canReceive())
-                                @can('procurement.manage')
-                                    <a href="{{ route('goods-receipts.create', $purchaseOrder) }}" class="mi-btn-orange mt-3 inline-flex text-xs py-2 px-3">
-                                        <i class="fas fa-plus text-[0.6rem]"></i> Receive Goods
-                                    </a>
-                                @endcan
-                            @endif
-                        </div>
-                    @endif
-                </div>
-
-            </div>
         </div>
     </div>
 </x-app-layout>

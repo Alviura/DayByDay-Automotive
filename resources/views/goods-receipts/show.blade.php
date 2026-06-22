@@ -12,7 +12,7 @@
         @include('goods-receipts.partials.page-styles')
     @endpush
 
-    <div class="mi-page space-y-5">
+    <div class="mi-page space-y-5" x-data="{ voidOpen: {{ $errors->has('reason') ? 'true' : 'false' }} }" x-init="if (voidOpen) $nextTick(() => $refs.voidPanel?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }))">
 
         {{-- Header --}}
         <div class="flex flex-wrap items-start justify-between gap-4">
@@ -21,7 +21,11 @@
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
                         <h1 class="text-[1.35rem] font-bold text-gray-900 leading-tight">{{ $goodsReceiptNote->grn_number }}</h1>
-                        <span class="grn-badge grn-badge-green">Posted to Inventory</span>
+                        @if ($goodsReceiptNote->isVoided())
+                            <span class="grn-badge grn-badge-slate">Voided</span>
+                        @else
+                            <span class="grn-badge grn-badge-green">Posted to Inventory</span>
+                        @endif
                         @if ($goodsReceiptNote->hasDamage())
                             <span class="grn-badge grn-badge-amber">Has Damage</span>
                         @endif
@@ -42,8 +46,22 @@
                         <i class="fas fa-file-invoice-dollar text-xs"></i> View PO
                     </a>
                 @endif
+                @if ($goodsReceiptNote->canVoid())
+                    @can('procurement.manage')
+                        <button type="button" class="mi-btn-ghost text-rose-600 border-rose-200 hover:bg-rose-50" x-show="!voidOpen" @click="voidOpen = true; $nextTick(() => $refs.voidPanel?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }))">
+                            <i class="fas fa-ban text-xs"></i> Void Receipt
+                        </button>
+                    @endcan
+                @endif
             </div>
         </div>
+
+        @include('goods-receipts.partials.void-panel', [
+            'goodsReceiptNote' => $goodsReceiptNote,
+            'lineCount' => $lineCount,
+            'goodQty' => $goodQty,
+            'damagedQty' => $damagedQty,
+        ])
 
         {{-- KPIs --}}
         <div class="mi-kpi-row">
@@ -82,7 +100,7 @@
         </div>
 
         {{-- Split layout --}}
-        <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
+        <div class="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5">
 
             {{-- Line items --}}
             <div class="mi-card">
@@ -140,80 +158,11 @@
             </div>
 
             {{-- Sidebar --}}
-            <div class="space-y-4">
+            @include('goods-receipts.partials.show-sidebar', [
+                'goodsReceiptNote' => $goodsReceiptNote,
+                'receivedQty' => $receivedQty,
+            ])
 
-                {{-- Receipt details --}}
-                <div class="mi-card p-5 space-y-3">
-                    <p class="grn-section-title"><i class="fas fa-circle-info"></i> Receipt Details</p>
-                    <dl class="space-y-2 text-sm">
-                        <div class="flex justify-between gap-2">
-                            <dt class="text-gray-500">GRN Number</dt>
-                            <dd class="font-semibold text-gray-800">{{ $goodsReceiptNote->grn_number }}</dd>
-                        </div>
-                        <div class="flex justify-between gap-2">
-                            <dt class="text-gray-500">Warehouse</dt>
-                            <dd class="font-medium text-gray-800 text-right">{{ $goodsReceiptNote->warehouse?->name }}</dd>
-                        </div>
-                        <div class="flex justify-between gap-2">
-                            <dt class="text-gray-500">Received At</dt>
-                            <dd class="text-gray-800">{{ $goodsReceiptNote->received_at?->format('d M Y H:i') ?? '—' }}</dd>
-                        </div>
-                        <div class="flex justify-between gap-2">
-                            <dt class="text-gray-500">Received By</dt>
-                            <dd class="text-gray-800">{{ $goodsReceiptNote->receiver?->name ?? '—' }}</dd>
-                        </div>
-                        <div class="flex justify-between gap-2">
-                            <dt class="text-gray-500">Total Received</dt>
-                            <dd class="text-gray-800">{{ number_format($receivedQty, 2) }} units</dd>
-                        </div>
-                    </dl>
-                    @if ($goodsReceiptNote->notes)
-                        <div class="pt-2 border-t border-gray-100">
-                            <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Notes</p>
-                            <p class="text-sm text-gray-600">{{ $goodsReceiptNote->notes }}</p>
-                        </div>
-                    @endif
-                </div>
-
-                {{-- PO link --}}
-                @if ($goodsReceiptNote->purchaseOrder)
-                    <div class="mi-card p-5">
-                        <p class="grn-section-title mb-3"><i class="fas fa-file-invoice-dollar"></i> Purchase Order</p>
-                        <a href="{{ route('purchase-orders.show', $goodsReceiptNote->purchaseOrder) }}" class="grn-link-card">
-                            <div class="flex items-center gap-3 min-w-0">
-                                <div class="grn-link-card-icon" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe">
-                                    <i class="fas fa-file-invoice"></i>
-                                </div>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-gray-800 truncate">{{ $goodsReceiptNote->purchaseOrder->po_number }}</p>
-                                    <p class="text-xs text-gray-400">{{ $goodsReceiptNote->purchaseOrder->supplier?->name }}</p>
-                                </div>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
-                        </a>
-                    </div>
-                @endif
-
-                {{-- Quotation series link --}}
-                @if ($goodsReceiptNote->quotationSeries)
-                    <div class="mi-card p-5">
-                        <p class="grn-section-title mb-3"><i class="fas fa-folder-open"></i> Quotation Series</p>
-                        <a href="{{ route('quotation-series.show', $goodsReceiptNote->quotationSeries) }}" class="grn-link-card">
-                            <div class="flex items-center gap-3 min-w-0">
-                                <div class="grn-link-card-icon" style="background:#fff7ed;color:#ea580c;border:1px solid #fed7aa">
-                                    <i class="fas fa-folder-open"></i>
-                                </div>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-gray-800 truncate">{{ $goodsReceiptNote->quotationSeries->displayName() }}</p>
-                                    <p class="text-xs text-gray-400">{{ $goodsReceiptNote->quotationSeries->series_number }}</p>
-                                </div>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
-                        </a>
-                    </div>
-                @endif
-
-            </div>
         </div>
     </div>
 </x-app-layout>

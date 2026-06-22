@@ -124,7 +124,11 @@ class ReturnRecord extends Model implements ApprovableDocument
 
     public function resolveApprovalApprover(): ?User
     {
-        return app(ApprovalService::class)->resolveDefaultApprover();
+        return User::permission('returns.approve')
+            ->active()
+            ->orderBy('id')
+            ->first()
+            ?? app(ApprovalService::class)->resolveDefaultApprover();
     }
 
     public function onApprovalApproved(Approval $approval): void
@@ -150,7 +154,27 @@ class ReturnRecord extends Model implements ApprovableDocument
 
     public function onApprovalReturned(Approval $approval): void
     {
-        $this->update(['status' => 'pending']);
+        $this->update(['status' => 'draft']);
+    }
+
+    public static function returnedQuantityForSaleProduct(int $saleId, int $productId, ?int $excludeReturnId = null): float
+    {
+        return (float) ReturnItem::query()
+            ->where('product_id', $productId)
+            ->whereHas('returnRecord', function ($q) use ($saleId, $excludeReturnId) {
+                $q->where('sale_id', $saleId)
+                    ->where('type', 'customer')
+                    ->whereNotIn('status', ['rejected'])
+                    ->when($excludeReturnId, fn ($inner) => $inner->where('id', '!=', $excludeReturnId));
+            })
+            ->sum('quantity');
+    }
+
+    public function estimatedRefund(): float
+    {
+        $this->loadMissing('items');
+
+        return (float) $this->items->sum(fn (ReturnItem $item) => $item->lineRefund());
     }
 
     public function typeLabel(): string
@@ -161,7 +185,8 @@ class ReturnRecord extends Model implements ApprovableDocument
     public function statusLabel(): string
     {
         return match ($this->status) {
-            'pending' => 'Pending',
+            'draft' => 'Draft',
+            'pending' => $this->hasOpenApproval() ? 'Awaiting Approval' : 'Pending',
             'approved' => 'Approved',
             'rejected' => 'Rejected',
             'completed' => 'Completed',
@@ -169,14 +194,26 @@ class ReturnRecord extends Model implements ApprovableDocument
         };
     }
 
+    public function statusBadgeClass(): string
+    {
+        return match ($this->status) {
+            'draft' => 'rt-badge rt-badge-slate',
+            'pending' => 'rt-badge rt-badge-amber',
+            'approved' => 'rt-badge rt-badge-blue',
+            'rejected' => 'rt-badge rt-badge-rose',
+            'completed' => 'rt-badge rt-badge-green',
+            default => 'rt-badge rt-badge-slate',
+        };
+    }
+
     public function canEdit(): bool
     {
-        return $this->status === 'pending' && ! $this->hasOpenApproval();
+        return $this->status === 'draft' && ! $this->hasOpenApproval();
     }
 
     public function canSubmit(): bool
     {
-        return $this->status === 'pending'
+        return $this->status === 'draft'
             && $this->items()->exists()
             && ! $this->hasOpenApproval();
     }

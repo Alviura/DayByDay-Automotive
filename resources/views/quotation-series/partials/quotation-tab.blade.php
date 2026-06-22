@@ -149,7 +149,7 @@
                             @if ($series->canBulkAddItems())
                                 <td>
                                     @can('procurement.manage')
-                                        <form action="{{ route('quotation-series.items.destroy', [$series, $item]) }}" method="POST" class="inline" onsubmit="return confirm('Remove this line?');">
+                                        <form action="{{ route('quotation-series.items.destroy', [$series, $item]) }}" method="POST" class="inline" data-confirm="Remove this line?" data-confirm-variant="danger">
                                             @csrf @method('DELETE')
                                             <button type="submit" class="mi-action del" title="Remove"><i class="fas fa-trash-can"></i></button>
                                         </form>
@@ -175,9 +175,11 @@
             @can('procurement.manage')
                 <div class="qs-action-bar">
                     <span class="text-sm text-gray-500">{{ $series->items->count() }} products ready for pricing</span>
-                    <form action="{{ route('quotation-series.proceed', $series) }}" method="POST" class="inline">
+                    <form action="{{ route('quotation-series.proceed', $series) }}" method="POST" class="inline"
+                          data-confirm="Proceed to order processing? Supplier prices will be entered next."
+                          data-confirm-variant="warning">
                         @csrf
-                        <button type="submit" class="mi-btn-orange" onclick="return confirm('Proceed to order processing? Supplier prices will be entered next.')">
+                        <button type="submit" class="mi-btn-orange">
                             Start Order Processing <i class="fas fa-arrow-right text-xs"></i>
                         </button>
                     </form>

@@ -116,6 +116,7 @@
                         <table class="mi-table">
                             <thead>
                                 <tr>
+                                    <th class="w-10">Include</th>
                                     <th>Product</th>
                                     <th>Remaining</th>
                                     <th>Received Qty</th>
@@ -127,30 +128,35 @@
                                 @php $formIndex = 0; @endphp
                                 @foreach ($purchaseOrder->items as $item)
                                     @if ($item->remainingQuantity() > 0)
-                                        <tr>
+                                        <tr x-data="{ included: true }">
+                                            <td class="text-center">
+                                                <input type="checkbox" name="items[{{ $formIndex }}][include]" value="1" x-model="included" class="rounded border-gray-300">
+                                            </td>
                                             <td>
-                                                <span class="text-sm font-medium text-gray-800">{{ $item->product->part_number }}</span>
-                                                <p class="mi-pkg-sub">{{ $item->product->name }}</p>
+                                                <span class="text-sm font-medium text-gray-800" :class="{ 'opacity-40': !included }">{{ $item->product->part_number }}</span>
+                                                <p class="mi-pkg-sub" :class="{ 'opacity-40': !included }">{{ $item->product->name }}</p>
                                                 <input type="hidden" name="items[{{ $formIndex }}][product_id]" value="{{ $item->product_id }}">
                                             </td>
-                                            <td><span class="font-semibold text-gray-700">{{ \App\Models\GoodsReceiptNoteItem::formatQuantity($item->remainingQuantity()) }}</span></td>
+                                            <td><span class="font-semibold text-gray-700" :class="{ 'opacity-40': !included }">{{ \App\Models\GoodsReceiptNoteItem::formatQuantity($item->remainingQuantity()) }}</span></td>
                                             <td>
                                                 <input type="number" step="1" min="0"
                                                        name="items[{{ $formIndex }}][received_quantity]"
                                                        class="mi-input grn-input-qty"
-                                                       value="{{ old('items.'.$formIndex.'.received_quantity', \App\Models\GoodsReceiptNoteItem::normalizeQuantity($item->remainingQuantity())) }}"
-                                                       required>
+                                                       :disabled="!included"
+                                                       value="{{ old('items.'.$formIndex.'.received_quantity', \App\Models\GoodsReceiptNoteItem::normalizeQuantity($item->remainingQuantity())) }}">
                                             </td>
                                             <td>
                                                 <input type="number" step="1" min="0"
                                                        name="items[{{ $formIndex }}][damaged_quantity]"
                                                        class="mi-input grn-input-qty"
+                                                       :disabled="!included"
                                                        value="{{ old('items.'.$formIndex.'.damaged_quantity', 0) }}">
                                             </td>
                                             <td>
                                                 <input type="number" step="0.01" min="0"
                                                        name="items[{{ $formIndex }}][unit_cost]"
                                                        class="mi-input grn-input-cost"
+                                                       :disabled="!included"
                                                        value="{{ old('items.'.$formIndex.'.unit_cost', $item->unit_cost) }}">
                                             </td>
                                         </tr>
@@ -163,6 +169,7 @@
                 </div>
 
                 <div class="mi-form-actions">
+                    <x-input-error :messages="$errors->get('items')" class="mr-auto" />
                     <a href="{{ route('purchase-orders.show', $purchaseOrder) }}" class="mi-btn-ghost">Cancel</a>
                     <button type="submit" class="mi-btn-orange">
                         <i class="fas fa-check text-xs"></i> Post Receipt to Inventory
@@ -178,11 +185,11 @@
                 </div>
 
                 <ol class="mi-guide-list">
+                    <li>Check <strong>Include</strong> only for products on this delivery.</li>
                     <li>Select the <strong>warehouse</strong> where goods will be stored.</li>
-                    <li>Enter <strong>received qty</strong> for each line — defaults to the full remaining amount.</li>
+                    <li>Enter <strong>received qty</strong> for each included line.</li>
                     <li>Record any <strong>damaged qty</strong>; only good stock hits inventory.</li>
-                    <li>Confirm <strong>unit costs</strong> before posting (pre-filled from PO).</li>
-                    <li>Click <strong>Post Receipt</strong> — a GRN is created and stock is updated.</li>
+                    <li>If the supplier will never ship the balance, use <strong>Close Short</strong> on the PO after posting.</li>
                 </ol>
 
                 <div class="mt-4 pt-4 border-t border-gray-100">

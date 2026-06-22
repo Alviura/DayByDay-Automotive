@@ -1,8 +1,9 @@
 @if ($series->status === 'order_draft' && $series->items->isNotEmpty())
     @php
-        $pricesPanelExpanded = ! $series->hasSavedPrices() || $errors->any();
+        $pricesPanelCollapsed = $series->hasSavedPrices() || session('prices_panel_collapsed', false);
+        $pricesPanelExpanded = $errors->any() || ! $pricesPanelCollapsed;
     @endphp
-    <div class="space-y-4" x-data="orderProcessingPanel(@js($series->hasSavedPrices()), @js($pricesPanelExpanded))" x-init="init()">
+    <div class="space-y-4" x-data="orderProcessingPanel(@js($series->hasSavedPrices()), @js($pricesPanelExpanded), @js($pricesPanelCollapsed))" x-init="init()">
 
         @if ($series->canEditPrices())
             @can('procurement.manage')
@@ -12,8 +13,8 @@
                             <div class="qs-section-title"><i class="fas fa-pen-to-square"></i> Enter Supplier Prices</div>
                             <p class="qs-section-sub" x-show="pricesExpanded">
                                 {{ $series->isImport()
-                                    ? 'Foreign unit prices, dimensions, and qty per packet — MKT wholesale defaults from product min price'
-                                    : 'Unit prices and per-line transport in KES — MKT wholesale defaults from product min price' }}
+                                    ? 'Foreign unit prices, dimensions, and quantity per packet — MKT wholesale price defaults from product min price'
+                                    : 'Unit prices and per-line transport in KES — MKT wholesale price defaults from product min price' }}
                             </p>
                             <p class="qs-section-sub" x-show="!pricesExpanded" x-cloak>
                                 @if ($series->isCalculated())
@@ -43,17 +44,17 @@
                                     <tr>
                                         <th>Part Number</th>
                                         <th>Product</th>
-                                        <th>Qty</th>
+                                        <th>Quantity</th>
                                         @if ($series->isImport())
-                                            <th>Unit ({{ $series->currency }})</th>
-                                            <th>Qty/Packet</th>
-                                            <th>Packets</th>
-                                            <th>W × L × H</th>
+                                            <th>Unit Price ({{ $series->currency }})</th>
+                                            <th>Quantity per Packet</th>
+                                            <th>Number of Packets</th>
+                                            <th>Width × Length × Height</th>
                                         @else
-                                            <th>Unit (KES)</th>
-                                            <th>Transport</th>
+                                            <th>Unit Price (KES)</th>
+                                            <th>Line Transport (KES)</th>
                                         @endif
-                                        <th>MKT Wholesale</th>
+                                        <th>MKT Wholesale Price</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -160,7 +161,7 @@
                 <div class="qs-section-head w-full">
                     <div>
                         <div class="qs-section-title"><i class="fas fa-calculator"></i> Order Summary</div>
-                        <p class="qs-section-sub">{{ ucfirst($series->purchase_type) }} · margin vs MKT wholesale</p>
+                        <p class="qs-section-sub">{{ ucfirst($series->purchase_type) }} · margin vs MKT wholesale price</p>
                     </div>
                     @can('procurement.manage')
                         @if ($series->canEditPrices())
@@ -195,84 +196,18 @@
             </div>
 
             <div x-show="pricesSaved" class="qs-summary-body" :class="{ 'qs-summary-stale': formDirty && @js($series->isCalculated()) }">
-                <div class="mi-table-wrap overflow-x-auto qs-summary-scroll">
-                    <table class="mi-table text-sm">
-                        <thead>
-                            <tr>
-                                <th>Part</th>
-                                <th>Qty</th>
-                                @if ($series->isImport())
-                                    <th>Unit ({{ $series->currency }})</th>
-                                    <th>Total ({{ $series->currency }})</th>
-                                    <th>Unit (KES)</th>
-                                    <th>CBM</th>
-                                    <th>Transport/U</th>
-                                @else
-                                    <th>Unit (KES)</th>
-                                    <th>Total (KES)</th>
-                                    <th>Transport</th>
-                                @endif
-                                <th>Arrival</th>
-                                <th>MKT</th>
-                                <th>Margin</th>
-                                <th>%</th>
-                                <th>Actual</th>
-                                <th>Exp. Sales</th>
-                                <th>Exp. Margin</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($series->items as $item)
-                                @php
-                                    $marginPositive = $item->margin_amount !== null && $item->margin_amount >= 0;
-                                @endphp
-                                <tr>
-                                    <td class="font-medium whitespace-nowrap">{{ $item->product->part_number }}</td>
-                                    <td>{{ number_format($item->quantity, 0) }}</td>
-                                    @if ($series->isImport())
-                                        <td>{{ $item->unit_price_foreign ? number_format($item->unit_price_foreign, 4) : '—' }}</td>
-                                        <td>{{ $item->total_purchase_price ? number_format($item->total_purchase_price, 2) : '—' }}</td>
-                                        <td>{{ $item->unit_price_ksh ? number_format($item->unit_price_ksh, 2) : '—' }}</td>
-                                        <td>{{ $item->total_cbm ? number_format($item->total_cbm, 2) : '—' }}</td>
-                                        <td>{{ $item->transport_per_unit ? number_format($item->transport_per_unit, 2) : '—' }}</td>
-                                    @else
-                                        <td>{{ $item->unit_price ? number_format($item->unit_price, 2) : '—' }}</td>
-                                        <td>{{ $item->total_purchase_price ? number_format($item->total_purchase_price, 2) : '—' }}</td>
-                                        <td>{{ number_format($item->transport ?? 0, 2) }}</td>
-                                    @endif
-                                    <td>{{ $item->unit_cost_arrival ? number_format($item->unit_cost_arrival, 2) : '—' }}</td>
-                                    <td>{{ number_format($item->resolveMarketWholesalePrice(), 2) }}</td>
-                                    <td class="{{ $marginPositive ? 'text-green-700' : 'text-red-600' }} font-medium">{{ $item->margin_amount !== null ? number_format($item->margin_amount, 2) : '—' }}</td>
-                                    <td class="{{ $marginPositive ? 'text-green-700' : 'text-red-600' }}">{{ $item->margin_percent !== null ? number_format($item->margin_percent, 1).'%' : '—' }}</td>
-                                    <td>{{ $item->actual_total_cost ? number_format($item->actual_total_cost, 2) : '—' }}</td>
-                                    <td>{{ $item->expected_sales ? number_format($item->expected_sales, 2) : '—' }}</td>
-                                    <td class="font-medium text-green-700">{{ $item->expected_margin ? number_format($item->expected_margin, 2) : '—' }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                        @if ($series->isCalculated())
-                            <tfoot class="font-semibold bg-stone-50 text-sm">
-                                @if ($series->isImport())
-                                    <tr><td colspan="13" class="text-right text-gray-500">Total purchase ({{ $series->currency }})</td><td colspan="3">{{ number_format($series->total_purchase_price, 2) }}</td></tr>
-                                    <tr><td colspan="13" class="text-right text-gray-500">Total CBM</td><td colspan="3">{{ number_format($series->total_cbm, 2) }}</td></tr>
-                                @endif
-                                <tr><td colspan="{{ $series->isImport() ? 13 : 9 }}" class="text-right text-gray-500">Total transport</td><td colspan="3">{{ number_format($series->total_transport_cost, 2) }}</td></tr>
-                                <tr><td colspan="{{ $series->isImport() ? 13 : 9 }}" class="text-right text-gray-500">Total actual cost</td><td colspan="3" class="text-orange-700">{{ number_format($series->total_actual_cost, 2) }}</td></tr>
-                                <tr><td colspan="{{ $series->isImport() ? 13 : 9 }}" class="text-right text-gray-500">Total expected sales</td><td colspan="3">{{ number_format($series->total_expected_sales, 2) }}</td></tr>
-                                <tr class="bg-green-50"><td colspan="{{ $series->isImport() ? 13 : 9 }}" class="text-right text-gray-600">Total expected margin</td><td colspan="3" class="text-green-700">{{ number_format($series->total_expected_margin, 2) }}</td></tr>
-                            </tfoot>
-                        @endif
-                    </table>
-                </div>
+                @include('quotation-series.partials.order-summary-table')
             </div>
 
             @if ($series->canConfirm())
                 @can('procurement.manage')
                     <div class="qs-action-bar">
                         <span class="text-sm text-gray-500">Review margins, then confirm to auto-approve this series.</span>
-                        <form action="{{ route('quotation-series.confirm', $series) }}" method="POST" class="inline">
+                        <form action="{{ route('quotation-series.confirm', $series) }}" method="POST" class="inline"
+                              data-confirm="Confirm order? This will auto-approve the quotation series."
+                              data-confirm-variant="warning">
                             @csrf
-                            <button type="submit" class="mi-btn-orange" onclick="return confirm('Confirm order? This will auto-approve the quotation series.')">
+                            <button type="submit" class="mi-btn-orange">
                                 <i class="fas fa-check text-xs"></i> Confirm Order &amp; Approve
                             </button>
                         </form>
@@ -289,6 +224,21 @@
             <p class="text-sm text-gray-400 mt-1">Add products in the Quotation tab, then click <strong>Start Order Processing</strong>.</p>
         </div>
     </div>
+@elseif ($series->items->isNotEmpty() && ($series->hasSavedPrices() || $series->isCalculated()))
+    <div class="mi-card">
+        <div class="mi-card-head">
+            <div class="qs-section-head w-full">
+                <div>
+                    <div class="qs-section-title"><i class="fas fa-calculator"></i> Order Summary</div>
+                    <p class="qs-section-sub">{{ ucfirst($series->purchase_type) }} · {{ $series->items->count() }} lines · read-only record of completed order processing</p>
+                </div>
+                @include('quotation-series.partials.status-badge')
+            </div>
+        </div>
+        <div class="qs-summary-body">
+            @include('quotation-series.partials.order-summary-table')
+        </div>
+    </div>
 @else
     <div class="mi-card">
         <div class="qs-empty">
@@ -302,13 +252,18 @@
 @if ($series->status === 'order_draft' && $series->items->isNotEmpty())
 @push('scripts')
 <script>
-function orderProcessingPanel(pricesSaved, pricesExpandedInitially = true) {
+function orderProcessingPanel(pricesSaved, pricesExpandedInitially = true, pricesPanelCollapsed = false) {
     return {
         pricesSaved,
         pricesExpanded: pricesExpandedInitially,
+        pricesPanelCollapsed,
         formDirty: false,
 
-        init() {},
+        init() {
+            if (this.pricesPanelCollapsed && !@js($errors->any())) {
+                this.pricesExpanded = false;
+            }
+        },
 
         togglePricesPanel() {
             this.pricesExpanded = !this.pricesExpanded;
@@ -316,6 +271,7 @@ function orderProcessingPanel(pricesSaved, pricesExpandedInitially = true) {
 
         onPricesFormSubmit() {
             this.pricesExpanded = false;
+            this.pricesPanelCollapsed = true;
         },
 
         markDirty() {

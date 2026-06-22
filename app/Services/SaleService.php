@@ -22,11 +22,22 @@ class SaleService
         ?Sale $existing = null,
         ?string $customerName = null,
         ?string $customerPhone = null,
-        ?string $notes = null
+        ?string $notes = null,
+        string $saleType = 'retail',
+        ?int $customerAccountId = null,
+        ?string $vehiclePlate = null
     ): Sale {
         $user ??= auth()->user();
 
-        return DB::transaction(function () use ($shop, $items, $user, $existing, $customerName, $customerPhone, $notes) {
+        return DB::transaction(function () use ($shop, $items, $user, $existing, $customerName, $customerPhone, $notes, $saleType, $customerAccountId, $vehiclePlate) {
+            if ($saleType === 'credit' && ! $customerAccountId) {
+                throw new \InvalidArgumentException('A customer account is required for credit sales.');
+            }
+
+            if ($saleType === 'credit' && ! trim($vehiclePlate ?? '')) {
+                throw new \InvalidArgumentException('Vehicle plate is required for fleet sales.');
+            }
+
             if ($existing) {
                 if (! $existing->isHeld()) {
                     throw new \InvalidArgumentException('Only held sales can be updated.');
@@ -38,37 +49,111 @@ class SaleService
                     'receipt_number' => Sale::generateReceiptNumber(),
                     'shop_id' => $shop->id,
                     'user_id' => $user->id,
+                    'ordered_by' => $user->id,
+                    'sale_type' => $saleType,
+                    'customer_account_id' => $saleType === 'credit' ? $customerAccountId : null,
+                    'vehicle_plate' => $saleType === 'credit' ? $vehiclePlate : null,
                     'status' => 'held',
                     'payment_status' => 'unpaid',
+                    'submitted_at' => now(),
                 ]);
             }
 
+            $account = $saleType === 'credit' ? \App\Models\CustomerAccount::findOrFail($customerAccountId) : null;
+
             $sale->update([
-                'customer_name' => $customerName,
-                'customer_phone' => $customerPhone,
+                'sale_type' => $saleType,
+                'customer_account_id' => $account?->id,
+                'vehicle_plate' => $saleType === 'credit' ? $vehiclePlate : null,
+                'customer_name' => $customerName ?: $account?->contact_name,
+                'customer_phone' => $customerPhone ?: $account?->phone,
                 'notes' => $notes,
             ]);
+
+            if ($existing && ! $user?->can('sales.create')) {
+                $sale->update(['submitted_at' => now()]);
+            }
 
             $sale->items()->delete();
             foreach ($items as $line) {
                 $product = Product::findOrFail($line['product_id']);
+                $unitPrice = $this->resolveUnitPrice($product, $line, $user, $saleType);
                 $this->assertAvailable($product, $shop, (float) $line['quantity']);
-
-                $unitPrice = $line['unit_price'] ?? $product->max_selling_price;
-                $this->assertUnitPriceInRange($product, (float) $unitPrice);
+                $this->assertUnitPriceInRange($product, $unitPrice);
 
                 $sale->items()->create([
                     'product_id' => $product->id,
                     'quantity' => $line['quantity'],
                     'unit_price' => $unitPrice,
-                    'discount' => $line['discount'] ?? 0,
+                    'discount' => 0,
                 ]);
             }
 
             $this->recalculateTotals($sale);
+
+            if ($account && $account->credit_limit !== null) {
+                $outstanding = $account->outstandingBalance() + (float) $sale->total;
+                if ($outstanding > (float) $account->credit_limit) {
+                    throw new \InvalidArgumentException("Credit limit exceeded for {$account->name}. Outstanding would be ".number_format($outstanding, 2).'.');
+                }
+            }
+
             $this->reserveItems($sale, $shop);
 
-            return $sale->fresh(['items.product.unit', 'shop']);
+            return $sale->fresh(['items.product.unit', 'shop', 'customerAccount']);
+        });
+    }
+
+    public function completeOnAccount(Sale $sale, ?User $user = null): Sale
+    {
+        if (! $sale->canComplete()) {
+            throw new \InvalidArgumentException('This sale cannot be completed.');
+        }
+
+        if (! $sale->isCredit()) {
+            throw new \InvalidArgumentException('Only credit sales can be issued on account.');
+        }
+
+        $user ??= auth()->user();
+        $sale->load(['items.product', 'shop', 'customerAccount']);
+
+        if ($sale->customerAccount && $sale->customerAccount->credit_limit !== null) {
+            $outstanding = $sale->customerAccount->outstandingBalance() + (float) $sale->total;
+            if ($outstanding > (float) $sale->customerAccount->credit_limit) {
+                throw new \InvalidArgumentException('Credit limit exceeded for this account.');
+            }
+        }
+
+        return DB::transaction(function () use ($sale, $user) {
+            foreach ($sale->items as $item) {
+                $balance = $this->inventory->getBalance($item->product, $sale->shop);
+                $unitCost = (float) ($balance?->average_cost ?? $item->product->cost_price ?? 0);
+
+                $this->inventory->release($item->product, $sale->shop, (float) $item->quantity);
+
+                $this->inventory->record(
+                    $item->product,
+                    $sale->shop,
+                    'sale',
+                    -(float) $item->quantity,
+                    $unitCost,
+                    $sale,
+                    $sale->receipt_number,
+                    'Credit sale — on account',
+                    $user
+                );
+            }
+
+            $sale->update([
+                'status' => 'completed',
+                'payment_status' => 'unpaid',
+                'amount_paid' => 0,
+                'change_due' => 0,
+                'sold_at' => now(),
+                'completed_by' => $user->id,
+            ]);
+
+            return $sale->fresh(['items.product.unit', 'shop', 'customerAccount', 'cashier']);
         });
     }
 
@@ -76,6 +161,10 @@ class SaleService
     {
         if (! $sale->canComplete()) {
             throw new \InvalidArgumentException('This sale cannot be completed.');
+        }
+
+        if ($sale->isCredit()) {
+            throw new \InvalidArgumentException('Credit sales must be issued on account. Use the Issue on Account action instead.');
         }
 
         $user ??= auth()->user();
@@ -130,6 +219,7 @@ class SaleService
                 'amount_paid' => $amountPaid,
                 'change_due' => max(0, $amountPaid - (float) $sale->total),
                 'sold_at' => now(),
+                'completed_by' => $user->id,
             ]);
 
             return $sale->fresh(['items.product.unit', 'payments', 'shop', 'cashier']);
@@ -192,8 +282,8 @@ class SaleService
         $sale->load('items');
 
         $subtotal = $sale->items->sum(fn (SaleItem $item) => (float) $item->quantity * (float) $item->unit_price);
-        $discountTotal = $sale->items->sum(fn (SaleItem $item) => (float) $item->discount);
-        $taxable = max(0, $subtotal - $discountTotal);
+        $discountTotal = 0;
+        $taxable = $subtotal;
         $taxRate = config('sales.tax_rate', 0);
         $taxTotal = round($taxable * $taxRate, 2);
         $total = round($taxable + $taxTotal, 2);
@@ -224,6 +314,36 @@ class SaleService
                 // Reservation may already be cleared.
             }
         }
+    }
+
+    private function resolveUnitPrice(Product $product, array $line, ?User $user, string $saleType = 'retail'): float
+    {
+        $canNegotiate = $user?->can('sales.create') ?? false;
+
+        if ($canNegotiate && isset($line['unit_price']) && $line['unit_price'] !== '' && $line['unit_price'] !== null) {
+            return (float) $line['unit_price'];
+        }
+
+        $max = (float) $product->max_selling_price;
+        $min = (float) $product->min_selling_price;
+
+        if ($saleType === 'credit') {
+            if ($min > 0) {
+                return $min;
+            }
+
+            return $max > 0 ? $max : 0;
+        }
+
+        if ($max > 0) {
+            return $max;
+        }
+
+        if ($min > 0) {
+            return $min;
+        }
+
+        return 0;
     }
 
     private function assertUnitPriceInRange(Product $product, float $unitPrice): void

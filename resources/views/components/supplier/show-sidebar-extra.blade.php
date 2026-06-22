@@ -10,8 +10,7 @@
             <li><i class="fas fa-check"></i> Open quotation series should be closed first.</li>
         </ul>
 
-        <form action="{{ route('suppliers.destroy', $supplier) }}" method="POST" class="mt-3"
-              onsubmit="return confirm('Delete {{ addslashes($supplier->name) }}? This cannot be undone easily.');">
+        <form action="{{ route('suppliers.destroy', $supplier) }}" method="POST" class="mt-3" data-confirm="Delete {{ addslashes($supplier->name) }}? This cannot be undone easily." data-confirm-variant="danger">
             @csrf
             @method('DELETE')
             <button type="submit" class="mi-btn-danger w-full justify-center">

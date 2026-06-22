@@ -183,8 +183,7 @@
                                                 <a href="{{ route('vehicle-makes.edit', $make) }}" class="mi-action edit" title="Edit">
                                                     <i class="fas fa-pen"></i>
                                                 </a>
-                                                <form action="{{ route('vehicle-makes.destroy', $make) }}" method="POST" class="inline"
-                                                      onsubmit="return confirm('Delete {{ addslashes($make->name) }}?');">
+                                                <form action="{{ route('vehicle-makes.destroy', $make) }}" method="POST" class="inline" data-confirm="Delete {{ addslashes($make->name) }}?" data-confirm-variant="danger">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="mi-action del" title="Delete">
@@ -229,8 +228,7 @@
                                 <a href="{{ $catalogUrl('models', ['vehicle_make_id' => $make->id]) }}" class="mi-action view"><i class="fas fa-car"></i></a>
                                 @can('master-data.manage')
                                     <a href="{{ route('vehicle-makes.edit', $make) }}" class="mi-action edit"><i class="fas fa-pen"></i></a>
-                                    <form action="{{ route('vehicle-makes.destroy', $make) }}" method="POST" class="inline"
-                                          onsubmit="return confirm('Delete {{ addslashes($make->name) }}?');">
+                                    <form action="{{ route('vehicle-makes.destroy', $make) }}" method="POST" class="inline" data-confirm="Delete {{ addslashes($make->name) }}?" data-confirm-variant="danger">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="mi-action del" title="Delete">
@@ -396,7 +394,7 @@
                                                     <i class="fas fa-pen"></i>
                                                 </a>
                                                 <form action="{{ route('vehicle-models.destroy', $model) }}" method="POST" class="inline"
-                                                      onsubmit="return confirm('Delete {{ addslashes($model->make->name . ' ' . $model->name) }}?');">
+                                                      data-confirm="Delete {{ $model->make->name }} {{ $model->name }}?" data-confirm-variant="danger">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="mi-action del" title="Delete">
@@ -437,7 +435,7 @@
                                 @can('master-data.manage')
                                     <a href="{{ route('vehicle-models.edit', $model) }}" class="mi-action edit"><i class="fas fa-pen"></i></a>
                                     <form action="{{ route('vehicle-models.destroy', $model) }}" method="POST" class="inline"
-                                          onsubmit="return confirm('Delete {{ addslashes($model->make->name . ' ' . $model->name) }}?');">
+                                          data-confirm="Delete {{ $model->make->name }} {{ $model->name }}?" data-confirm-variant="danger">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="mi-action del" title="Delete">

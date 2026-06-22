@@ -294,7 +294,7 @@ class QuotationSeries extends Model implements ApprovableDocument
 
     public function canCloseSeries(): bool
     {
-        return in_array($this->status, ['received', 'in_transit', 'po_generated'], true);
+        return $this->status === 'received';
     }
 
     public function canExportQuotation(): bool

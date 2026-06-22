@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,10 +17,15 @@ class GoodsReceiptNote extends Model
         'received_by',
         'received_at',
         'notes',
+        'status',
+        'voided_by',
+        'voided_at',
+        'void_reason',
     ];
 
     protected $casts = [
         'received_at' => 'datetime',
+        'voided_at' => 'datetime',
     ];
 
     public static function generateNumber(): string
@@ -58,6 +64,40 @@ class GoodsReceiptNote extends Model
     public function receiver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'received_by');
+    }
+
+    public function voidedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'voided_by');
+    }
+
+    public function scopePosted(Builder $query): Builder
+    {
+        return $query->where('status', 'posted');
+    }
+
+    public function isPosted(): bool
+    {
+        return $this->status === 'posted';
+    }
+
+    public function isVoided(): bool
+    {
+        return $this->status === 'voided';
+    }
+
+    public function canVoid(): bool
+    {
+        return $this->isPosted();
+    }
+
+    public function statusLabel(): string
+    {
+        return match ($this->status) {
+            'posted' => 'Posted',
+            'voided' => 'Voided',
+            default => ucfirst($this->status ?? 'posted'),
+        };
     }
 
     public function items(): HasMany

@@ -10,8 +10,7 @@
             <li><i class="fas fa-check"></i> Prefer deactivating over deleting when possible.</li>
         </ul>
 
-        <form action="{{ route('products.destroy', $product) }}" method="POST" class="mt-3"
-              onsubmit="return confirm('Delete {{ addslashes($product->name) }}?');">
+        <form action="{{ route('products.destroy', $product) }}" method="POST" class="mt-3" data-confirm="Delete {{ addslashes($product->name) }}?" data-confirm-variant="danger">
             @csrf
             @method('DELETE')
             <button type="submit" class="mi-btn-danger w-full justify-center">

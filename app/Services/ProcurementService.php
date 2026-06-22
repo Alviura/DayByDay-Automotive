@@ -63,8 +63,8 @@ class ProcurementService
 
     public function closeSeries(QuotationSeries $series): void
     {
-        if (! in_array($series->status, ['received', 'in_transit', 'po_generated'], true)) {
-            throw new \InvalidArgumentException('Quotation series cannot be closed in its current state.');
+        if ($series->status !== 'received') {
+            throw new \InvalidArgumentException('Quotation series can only be closed after all purchase orders have been received.');
         }
 
         $title = $series->title;

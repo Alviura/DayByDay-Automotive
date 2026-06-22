@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductName;
 use App\Models\Unit;
 use App\Models\VehicleMake;
+use App\Services\InventoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ use Illuminate\View\View;
 
 class ProductController extends Controller
 {
-    public function __construct()
+    public function __construct(private InventoryService $inventory)
     {
         $this->middleware('permission:products.view')->only(['index', 'show', 'search']);
         $this->middleware('permission:products.create')->only(['create', 'store']);
@@ -78,7 +79,12 @@ class ProductController extends Controller
             'fitmentModels.make',
         ]);
 
-        return view('products.show', compact('product'));
+        $stockContext = $this->inventory->productShowContext($product);
+
+        return view('products.show', array_merge(
+            compact('product'),
+            $stockContext
+        ));
     }
 
     public function edit(Product $product): View

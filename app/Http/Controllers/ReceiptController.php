@@ -20,7 +20,7 @@ class ReceiptController extends Controller
                 ->with('error', 'Receipt is only available for completed sales.');
         }
 
-        $sale->load(['shop', 'cashier', 'items.product.unit', 'payments.receiver']);
+        $sale->load(['shop', 'cashier', 'orderedBy', 'completedBy', 'customerAccount', 'items.product.unit', 'payments.receiver']);
 
         return view('sales.receipt', compact('sale'));
     }

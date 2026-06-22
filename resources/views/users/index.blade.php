@@ -52,7 +52,7 @@
                                             <a href="{{ route('users.edit', $user) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
                                         @endcan
                                         @can('users.delete')
-                                            <form action="{{ route('users.destroy', $user) }}" method="POST" class="inline" onsubmit="return confirm('Archive this user?');">
+                                            <form action="{{ route('users.destroy', $user) }}" method="POST" class="inline" data-confirm="Archive this user?" data-confirm-variant="danger">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="text-red-600 hover:text-red-900">Archive</button>

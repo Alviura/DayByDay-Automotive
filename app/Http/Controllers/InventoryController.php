@@ -21,70 +21,38 @@ class InventoryController extends Controller
 
     public function index(Request $request): View
     {
-        $balances = StockBalance::query()
-            ->with(['product.unit', 'location'])
-            ->search($request->search)
-            ->when($request->location_type && $request->location_id, function ($q) use ($request) {
-                $morph = $request->location_type === 'warehouse' ? Warehouse::class : Shop::class;
-                $q->where('location_type', $morph)->where('location_id', $request->location_id);
-            })
-            ->when($request->filter === 'low_stock', function ($q) {
-                $q->whereHas('product', fn ($pq) => $pq->where('reorder_level', '>', 0))
-                    ->whereRaw('stock_balances.quantity_on_hand <= (SELECT reorder_level FROM products WHERE products.id = stock_balances.product_id)');
-            })
-            ->when($request->filter === 'in_stock', fn ($q) => $q->where('quantity_on_hand', '>', 0))
-            ->when($request->filter === 'out_of_stock', fn ($q) => $q->where('quantity_on_hand', '<=', 0))
-            ->when($request->sort === 'product', fn ($q) => $q->orderBy(
-                Product::select('name')->whereColumn('products.id', 'stock_balances.product_id')
-            ))
-            ->when($request->sort === 'qty', fn ($q) => $q->orderByDesc('quantity_on_hand'))
-            ->when($request->sort === 'value', fn ($q) => $q->orderByRaw('(quantity_on_hand * average_cost) DESC'))
-            ->when(! in_array($request->sort, ['product', 'qty', 'value'], true), fn ($q) => $q->latest())
-            ->paginate(20)
-            ->withQueryString();
-
-        $stats = [
-            'skus' => StockBalance::where('quantity_on_hand', '>', 0)->count(),
-            'units' => (float) StockBalance::sum('quantity_on_hand'),
-            'reserved' => (float) StockBalance::sum('quantity_reserved'),
-            'value' => StockBalance::selectRaw('SUM(quantity_on_hand * average_cost) as total')->value('total') ?? 0,
-        ];
+        $products = $this->inventory->paginatedProductStockSummary($request);
+        $stats = $this->inventory->indexStats();
 
         $warehouses = Warehouse::active()->orderBy('name')->get(['id', 'name', 'code']);
         $shops = Shop::active()->orderBy('name')->get(['id', 'name', 'code']);
 
-        return view('inventory.index', compact('balances', 'stats', 'warehouses', 'shops'));
+        return view('inventory.index', compact('products', 'stats', 'warehouses', 'shops'));
     }
 
     public function show(Product $product): View
     {
-        $balances = StockBalance::query()
-            ->with('location')
-            ->where('product_id', $product->id)
-            ->orderByDesc('quantity_on_hand')
-            ->get();
-
-        $movements = StockLedger::query()
-            ->with(['location', 'user'])
-            ->where('product_id', $product->id)
-            ->latest()
-            ->limit(25)
-            ->get();
-
         $product->load(['unit', 'category']);
 
-        return view('inventory.show', compact('product', 'balances', 'movements'));
+        $context = $this->inventory->productShowContext($product);
+
+        return view('inventory.show', array_merge(
+            compact('product'),
+            $context
+        ));
     }
 
     public function movements(Request $request): View
     {
         $movements = StockLedger::query()
-            ->with(['product', 'location', 'user'])
+            ->with(['product.unit', 'location', 'user'])
             ->when($request->search, function ($q) use ($request) {
-                $q->where(function ($inner) use ($request) {
-                    $inner->where('reference_number', 'like', "%{$request->search}%")
-                        ->orWhereHas('product', fn ($pq) => $pq->where('name', 'like', "%{$request->search}%")
-                            ->orWhere('part_number', 'like', "%{$request->search}%"));
+                $term = $request->search;
+                $q->where(function ($inner) use ($term) {
+                    $inner->where('reference_number', 'like', "%{$term}%")
+                        ->orWhere('notes', 'like', "%{$term}%")
+                        ->orWhereHas('product', fn ($pq) => $pq->where('name', 'like', "%{$term}%")
+                            ->orWhere('part_number', 'like', "%{$term}%"));
                 });
             })
             ->when($request->transaction_type, fn ($q) => $q->where('transaction_type', $request->transaction_type))
@@ -92,6 +60,8 @@ class InventoryController extends Controller
                 $morph = $request->location_type === 'warehouse' ? Warehouse::class : Shop::class;
                 $q->where('location_type', $morph)->where('location_id', $request->location_id);
             })
+            ->when($request->date_from, fn ($q) => $q->whereDate('created_at', '>=', $request->date_from))
+            ->when($request->date_to, fn ($q) => $q->whereDate('created_at', '<=', $request->date_to))
             ->when($request->sort === 'oldest', fn ($q) => $q->oldest())
             ->when($request->sort !== 'oldest', fn ($q) => $q->latest())
             ->paginate(25)
@@ -100,17 +70,26 @@ class InventoryController extends Controller
         $warehouses = Warehouse::active()->orderBy('name')->get(['id', 'name', 'code']);
         $shops = Shop::active()->orderBy('name')->get(['id', 'name', 'code']);
 
-        $transactionTypes = [
-            'opening_balance', 'purchase_receipt', 'transfer_out', 'transfer_in',
-            'sale', 'customer_return', 'supplier_return', 'adjustment',
-        ];
+        $transactionTypes = array_keys(StockLedger::TYPE_LABELS);
 
-        return view('inventory.movements', compact('movements', 'warehouses', 'shops', 'transactionTypes'));
+        $typeSummary = StockLedger::query()
+            ->selectRaw('transaction_type, COUNT(*) as entries, SUM(quantity) as net_qty, SUM(ABS(quantity) * COALESCE(unit_cost, 0)) as total_value')
+            ->when($request->date_from, fn ($q) => $q->whereDate('created_at', '>=', $request->date_from))
+            ->when($request->date_to, fn ($q) => $q->whereDate('created_at', '<=', $request->date_to))
+            ->groupBy('transaction_type')
+            ->orderByDesc('entries')
+            ->get();
+
+        return view('inventory.movements', compact(
+            'movements', 'warehouses', 'shops', 'transactionTypes', 'typeSummary'
+        ));
     }
 
     public function valuation(Request $request): View
     {
-        $locations = $this->inventory->valuationForAllLocations();
+        $locations = $this->inventory->valuationForAllLocations()
+            ->sortByDesc('total_value')
+            ->values();
 
         if ($request->location_type && $request->location_id) {
             $model = $request->location_type === 'warehouse'
@@ -118,19 +97,38 @@ class InventoryController extends Controller
                 : Shop::find($request->location_id);
 
             $detail = $model ? $this->inventory->valuation($model) : null;
+            $detailLocation = $model;
+
+            if ($detail) {
+                $detail['balances'] = $detail['balances']
+                    ->sortByDesc(fn (StockBalance $b) => $b->stockValue())
+                    ->values();
+            }
         } else {
             $detail = null;
+            $detailLocation = null;
         }
 
-        $grandTotal = $locations->sum('total_value');
-        $grandUnits = $locations->sum('total_units');
-        $grandSkus = $locations->sum('sku_count');
-
-        $warehouses = Warehouse::active()->orderBy('name')->get(['id', 'name', 'code']);
-        $shops = Shop::active()->orderBy('name')->get(['id', 'name', 'code']);
+        $grandTotal = (float) $locations->sum('total_value');
+        $grandUnits = (float) $locations->sum('total_units');
+        $warehouseTotal = (float) $locations->where('type', 'Warehouse')->sum('total_value');
+        $shopTotal = (float) $locations->where('type', 'Shop')->sum('total_value');
+        $uniqueSkus = (int) StockBalance::query()
+            ->where('quantity_on_hand', '>', 0)
+            ->distinct('product_id')
+            ->count('product_id');
+        $activeLocations = $locations->where('total_value', '>', 0)->count();
 
         return view('inventory.valuation', compact(
-            'locations', 'detail', 'grandTotal', 'grandUnits', 'grandSkus', 'warehouses', 'shops'
+            'locations',
+            'detail',
+            'detailLocation',
+            'grandTotal',
+            'grandUnits',
+            'warehouseTotal',
+            'shopTotal',
+            'uniqueSkus',
+            'activeLocations',
         ));
     }
 

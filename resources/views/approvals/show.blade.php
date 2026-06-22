@@ -2,6 +2,7 @@
 
     @push('styles')
         <x-module.page-index-styles />
+        @include('approvals.partials.page-styles')
     @endpush
 
     <div class="mi-page space-y-5">
@@ -68,6 +69,8 @@
         <div class="mi-form-split">
             <div class="mi-form-main space-y-5">
 
+                @include('approvals.partials.document-preview', ['approval' => $approval])
+
                 <div class="mi-card">
                     <div class="mi-card-head">
                         <div class="flex items-center gap-2 text-gray-700">
@@ -112,7 +115,7 @@
                             <div class="mi-detail-item">
                                 <dt class="mi-detail-label"><i class="fas fa-right-left"></i> Source Document</dt>
                                 <dd class="mi-detail-value">
-                                    <a href="{{ route('transfer-requests.show', $approval->approvable) }}" class="text-orange-600 hover:text-orange-700">
+                                    <a href="{{ route('transfers.show', $approval->approvable) }}" class="text-orange-600 hover:text-orange-700">
                                         View transfer {{ $approval->approvable->request_number }}
                                     </a>
                                 </dd>
@@ -164,7 +167,8 @@
                             </div>
                         </div>
                         <form method="POST" action="{{ route('approvals.act', $approval) }}" class="p-6 space-y-4"
-                              x-data="{ action: 'approved' }">
+                              x-data="{ action: 'approved' }"
+                              x-on:submit="if (action === 'rejected' && !window.appConfirm('Reject this request? The document will not proceed.', { variant: 'danger', confirmLabel: 'Reject' })) { $event.preventDefault(); } if (action === 'returned' && !window.appConfirm('Return this request for revision?', { variant: 'warning', confirmLabel: 'Return' })) { $event.preventDefault(); }">
                             @csrf
                             <div>
                                 <label class="mi-field-label"><i class="fas fa-list-check"></i> Decision</label>
@@ -240,6 +244,7 @@
                     <section class="mi-guide-section">
                         <h3 class="mi-guide-section-title"><i class="fas fa-lightbulb"></i> Guidelines</h3>
                         <ul class="mi-guide-tips">
+                            <li><i class="fas fa-check"></i> Review the line preview above before deciding — it shows quantities, routes, and amounts.</li>
                             <li><i class="fas fa-check"></i> Approve when the request meets policy and supporting details are complete.</li>
                             <li><i class="fas fa-check"></i> Return for revision when changes are needed — the requester can resubmit.</li>
                             <li><i class="fas fa-check"></i> Reject when the request should not proceed; always leave a clear reason.</li>

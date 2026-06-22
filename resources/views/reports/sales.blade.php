@@ -18,7 +18,7 @@
             <div class="mi-kpi mi-kpi-purple"><div><p class="mi-kpi-label">Transactions</p><p class="mi-kpi-value">{{ $summary['transaction_count'] }}</p></div></div>
             <div class="mi-kpi mi-kpi-green"><div><p class="mi-kpi-label">Revenue</p><p class="mi-kpi-value">{{ number_format($summary['gross_revenue'], 0) }}</p></div></div>
             <div class="mi-kpi mi-kpi-amber"><div><p class="mi-kpi-label">Avg Ticket</p><p class="mi-kpi-value">{{ number_format($summary['avg_ticket'], 0) }}</p></div></div>
-            <div class="mi-kpi mi-kpi-orange"><div><p class="mi-kpi-label">Discounts</p><p class="mi-kpi-value orange">{{ number_format($summary['discounts'], 0) }}</p></div></div>
+            <div class="mi-kpi mi-kpi-orange"><div><p class="mi-kpi-label">Tax Collected</p><p class="mi-kpi-value orange">{{ number_format($summary['tax_collected'] ?? 0, 0) }}</p></div></div>
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">

@@ -2,9 +2,16 @@
 
     @push('styles')
         <x-module.page-index-styles />
+        @include('inventory.partials.page-styles')
     @endpush
 
-    <div class="mi-page space-y-5" x-data="{ tab: 'overview' }">
+    @php
+        $activeTab = in_array(request('tab'), ['overview', 'stock', 'movement', 'procurement'], true)
+            ? request('tab')
+            : 'overview';
+    @endphp
+
+    <div class="mi-page space-y-5" x-data="{ tab: '{{ $activeTab }}' }">
 
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="flex items-start gap-3">
@@ -79,6 +86,9 @@
             </button>
             <button type="button" @click="tab = 'stock'" :class="{ 'active': tab === 'stock' }">
                 <i class="fas fa-boxes-stacked"></i> Stock Balances
+                @if ($totals['on_hand'] > 0)
+                    <span class="mi-cat-badge !text-[0.62rem] !py-0">{{ number_format($totals['on_hand'], 0) }}</span>
+                @endif
             </button>
             <button type="button" @click="tab = 'movement'" :class="{ 'active': tab === 'movement' }">
                 <i class="fas fa-right-left"></i> Movement
@@ -167,48 +177,15 @@
                 </div>
 
                 <div x-show="tab === 'stock'" x-cloak x-transition>
-                    <div class="mi-card">
-                        <div class="mi-card-head">
-                            <div class="flex items-center gap-2 text-gray-700">
-                                <i class="fas fa-boxes-stacked text-gray-400 text-sm"></i>
-                                <span class="text-sm font-semibold">Stock Balances by Location</span>
-                            </div>
-                        </div>
-                        <div class="mi-show-empty">
-                            <i class="fas fa-clock"></i>
-                            <p>Stock balances will appear here once the inventory module (M12) is built.</p>
-                        </div>
-                    </div>
+                    @include('products.partials.stock-tab')
                 </div>
 
                 <div x-show="tab === 'movement'" x-cloak x-transition>
-                    <div class="mi-card">
-                        <div class="mi-card-head">
-                            <div class="flex items-center gap-2 text-gray-700">
-                                <i class="fas fa-right-left text-gray-400 text-sm"></i>
-                                <span class="text-sm font-semibold">Stock Movement History</span>
-                            </div>
-                        </div>
-                        <div class="mi-show-empty">
-                            <i class="fas fa-clock"></i>
-                            <p>Ledger entries and movement history will appear here once M12 is built.</p>
-                        </div>
-                    </div>
+                    @include('products.partials.movement-tab')
                 </div>
 
                 <div x-show="tab === 'procurement'" x-cloak x-transition>
-                    <div class="mi-card">
-                        <div class="mi-card-head">
-                            <div class="flex items-center gap-2 text-gray-700">
-                                <i class="fas fa-file-invoice-dollar text-gray-400 text-sm"></i>
-                                <span class="text-sm font-semibold">Procurement History</span>
-                            </div>
-                        </div>
-                        <div class="mi-show-empty">
-                            <i class="fas fa-clock"></i>
-                            <p>Purchase orders and goods receipts will appear here once M13 is built.</p>
-                        </div>
-                    </div>
+                    @include('products.partials.procurement-tab')
                 </div>
             </div>
 

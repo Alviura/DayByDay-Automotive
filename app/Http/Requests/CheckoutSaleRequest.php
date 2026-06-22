@@ -24,7 +24,6 @@ class CheckoutSaleRequest extends FormRequest
             'items.*.product_id' => ['required', 'integer', 'exists:products,id', 'distinct'],
             'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'items.*.unit_price' => ['nullable', 'numeric', 'min:0'],
-            'items.*.discount' => ['nullable', 'numeric', 'min:0'],
             'payments' => ['required', 'array', 'min:1'],
             'payments.*.method' => ['required', Rule::in(array_keys(\App\Models\Payment::methods()))],
             'payments.*.amount' => ['required', 'numeric', 'min:0.01'],

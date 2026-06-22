@@ -204,8 +204,7 @@
                                             <a href="{{ route('suppliers.edit', $supplier) }}" class="mi-action edit" title="Edit">
                                                 <i class="fas fa-pen"></i>
                                             </a>
-                                            <form action="{{ route('suppliers.destroy', $supplier) }}" method="POST" class="inline"
-                                                  onsubmit="return confirm('Delete {{ addslashes($supplier->name) }}?');">
+                                            <form action="{{ route('suppliers.destroy', $supplier) }}" method="POST" class="inline" data-confirm="Delete {{ addslashes($supplier->name) }}?" data-confirm-variant="danger">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="mi-action del" title="Delete">
@@ -265,8 +264,7 @@
                             @endcan
                             @can('suppliers.manage')
                                 <a href="{{ route('suppliers.edit', $supplier) }}" class="mi-action edit"><i class="fas fa-pen"></i></a>
-                                <form action="{{ route('suppliers.destroy', $supplier) }}" method="POST" class="inline"
-                                      onsubmit="return confirm('Delete {{ addslashes($supplier->name) }}?');">
+                                <form action="{{ route('suppliers.destroy', $supplier) }}" method="POST" class="inline" data-confirm="Delete {{ addslashes($supplier->name) }}?" data-confirm-variant="danger">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="mi-action del" title="Delete">

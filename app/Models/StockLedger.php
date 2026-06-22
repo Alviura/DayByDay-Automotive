@@ -33,6 +33,32 @@ class StockLedger extends Model
         'balance_after' => 'decimal:2',
     ];
 
+    /** @var array<string, string> */
+    public const TYPE_LABELS = [
+        'opening_balance' => 'Opening Balance',
+        'purchase_receipt' => 'Purchase Receipt',
+        'purchase_receipt_void' => 'Receipt Void',
+        'transfer_out' => 'Transfer Out',
+        'transfer_in' => 'Transfer In',
+        'sale' => 'Sale',
+        'customer_return' => 'Customer Return',
+        'supplier_return' => 'Supplier Return',
+        'adjustment' => 'Adjustment',
+    ];
+
+    /** @var array<string, string> */
+    public const TYPE_BADGES = [
+        'opening_balance' => 'inv-badge inv-badge-slate',
+        'purchase_receipt' => 'inv-badge inv-badge-green',
+        'purchase_receipt_void' => 'inv-badge inv-badge-rose',
+        'transfer_out' => 'inv-badge inv-badge-indigo',
+        'transfer_in' => 'inv-badge inv-badge-blue',
+        'sale' => 'inv-badge inv-badge-orange',
+        'customer_return' => 'inv-badge inv-badge-teal',
+        'supplier_return' => 'inv-badge inv-badge-amber',
+        'adjustment' => 'inv-badge inv-badge-violet',
+    ];
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
@@ -61,6 +87,53 @@ class StockLedger extends Model
 
     public function transactionLabel(): string
     {
-        return str_replace('_', ' ', ucwords($this->transaction_type, '_'));
+        return self::TYPE_LABELS[$this->transaction_type]
+            ?? str_replace('_', ' ', ucwords($this->transaction_type, '_'));
+    }
+
+    public function badgeClass(): string
+    {
+        return self::TYPE_BADGES[$this->transaction_type] ?? 'inv-badge inv-badge-slate';
+    }
+
+    public function isInbound(): bool
+    {
+        return (float) $this->quantity > 0;
+    }
+
+    public function lineValue(): float
+    {
+        return abs((float) $this->quantity) * (float) ($this->unit_cost ?? 0);
+    }
+
+    public function referenceUrl(): ?string
+    {
+        if (! $this->reference_type || ! $this->reference_id) {
+            return null;
+        }
+
+        return match ($this->reference_type) {
+            GoodsReceiptNote::class => route('goods-receipts.show', $this->reference_id),
+            StockAdjustment::class => route('stock-adjustments.show', $this->reference_id),
+            ReturnRecord::class => (($return = ReturnRecord::find($this->reference_id))
+                ? ($return->type === 'supplier'
+                    ? route('supplier-returns.show', $return)
+                    : route('customer-returns.show', $return))
+                : null),
+            StockTransfer::class => ($transfer = StockTransfer::find($this->reference_id))?->transfer_request_id
+                ? route('transfers.show', $transfer->transfer_request_id)
+                : null,
+            Sale::class => route('sales.show', $this->reference_id),
+            default => null,
+        };
+    }
+
+    public function referenceLabel(): ?string
+    {
+        if ($this->reference_number) {
+            return $this->reference_number;
+        }
+
+        return $this->reference_type ? class_basename($this->reference_type).' #'.$this->reference_id : null;
     }
 }

@@ -22,8 +22,8 @@ class ApprovalSeeder extends Seeder
         $pending = ApprovalDemonstration::updateOrCreate(
             ['reference' => 'DEMO-PENDING-001'],
             [
-                'title' => 'Demo procurement folder — brake pads shipment',
-                'description' => 'Sample pending approval for administrator review. Represents a procurement folder awaiting sign-off.',
+                'title' => 'Demo quotation series — brake pads shipment',
+                'description' => 'Sample pending approval for administrator review. Represents a quotation series from the legacy approval workflow.',
                 'module_type' => 'demonstration',
                 'workflow_status' => 'draft',
             ]
@@ -37,7 +37,7 @@ class ApprovalSeeder extends Seeder
         $approved = ApprovalDemonstration::updateOrCreate(
             ['reference' => 'DEMO-APPROVED-001'],
             [
-                'title' => 'Demo transfer request — warehouse to shop',
+                'title' => 'Demo stock transfer — warehouse to shop',
                 'description' => 'Already approved sample for timeline/history display.',
                 'module_type' => 'demonstration',
                 'workflow_status' => 'draft',

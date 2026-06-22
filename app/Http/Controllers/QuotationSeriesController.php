@@ -295,7 +295,9 @@ class QuotationSeriesController extends Controller
         try {
             $this->seriesService->updatePrices($quotationSeries, $request->validated('items'));
 
-            return back()->with('status', 'Prices saved.');
+            return back()
+                ->with('status', 'Prices saved.')
+                ->with('prices_panel_collapsed', true);
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }

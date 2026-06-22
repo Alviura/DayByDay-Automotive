@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Product;
 use App\Models\Shop;
 use App\Models\Warehouse;
+use App\Services\InventoryService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -47,6 +49,30 @@ class StoreTransferRequestRequest extends FormRequest
                 }
                 if (! Shop::whereKey($this->destination_id)->exists()) {
                     $validator->errors()->add('destination_id', 'Select a valid destination shop.');
+                }
+            }
+
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $inventory = app(InventoryService::class);
+            $source = $this->sourceModel();
+
+            foreach ($this->items as $index => $item) {
+                $product = Product::find($item['product_id']);
+                if (! $product) {
+                    continue;
+                }
+
+                $available = $inventory->available($product, $source);
+                $requested = (float) $item['requested_quantity'];
+
+                if ($requested > $available + 0.001) {
+                    $validator->errors()->add(
+                        "items.{$index}.requested_quantity",
+                        "{$product->part_number}: only ".number_format($available, 2).' available at source (requested '.number_format($requested, 2).').'
+                    );
                 }
             }
         });

@@ -21,7 +21,6 @@ class FinancialReportQuery
             ->when($filters->shopId, fn ($q) => $q->where('shop_id', $filters->shopId));
 
         $revenue = (float) (clone $salesQuery)->sum('total');
-        $discounts = (float) (clone $salesQuery)->sum('discount_total');
         $tax = (float) (clone $salesQuery)->sum('tax_total');
 
         $refundsQuery = ReturnRecord::query()
@@ -46,7 +45,6 @@ class FinancialReportQuery
 
         $summary = [
             'gross_revenue' => $revenue,
-            'discounts' => $discounts,
             'tax_collected' => $tax,
             'refunds' => $refunds,
             'net_revenue' => $netRevenue,
@@ -73,7 +71,6 @@ class FinancialReportQuery
 
         return collect([
             ['Metric' => 'Gross Revenue', 'Amount' => $data['summary']['gross_revenue']],
-            ['Metric' => 'Discounts', 'Amount' => $data['summary']['discounts']],
             ['Metric' => 'Tax Collected', 'Amount' => $data['summary']['tax_collected']],
             ['Metric' => 'Refunds', 'Amount' => $data['summary']['refunds']],
             ['Metric' => 'Net Revenue', 'Amount' => $data['summary']['net_revenue']],

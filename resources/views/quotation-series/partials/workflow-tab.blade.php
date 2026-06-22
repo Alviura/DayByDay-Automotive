@@ -64,10 +64,10 @@
                         @if ($series->canCloseSeries())
                             <div class="qs-workflow-action qs-workflow-action--close">
                                 <div class="qs-workflow-action-body">
-                                    <p class="qs-workflow-action-title">Close Series</p>
-                                    <p class="qs-workflow-action-desc">Mark this quotation series as fully complete.</p>
+                                    <p class="qs-workflow-action-title">Finalize Series</p>
+                                    <p class="qs-workflow-action-desc">All POs are received — close this series to mark it complete.</p>
                                 </div>
-                                <form action="{{ route('quotation-series.close', $series) }}" method="POST" class="shrink-0" onsubmit="return confirm('Close this quotation series?');">
+                                <form action="{{ route('quotation-series.close', $series) }}" method="POST" class="shrink-0" data-confirm="Close this quotation series? All purchase orders must be fully received.">
                                     @csrf
                                     <button type="submit" class="mi-btn-ghost text-xs"><i class="fas fa-flag-checkered"></i> Close</button>
                                 </form>
@@ -127,15 +127,23 @@
                 </div>
                 <div class="qs-workflow-card-body space-y-2">
                     @foreach ($series->goodsReceiptNotes as $grn)
-                        <a href="{{ route('goods-receipts.show', $grn) }}" class="qs-link-card">
-                            <div class="flex items-center gap-3">
+                        <a href="{{ route('goods-receipts.show', $grn) }}"
+                           class="qs-link-card {{ $grn->isVoided() ? 'qs-link-card--voided' : '' }}">
+                            <div class="flex items-center gap-3 min-w-0">
                                 <div class="qs-link-card-icon bg-green-50 text-green-600"><i class="fas fa-box-open"></i></div>
-                                <div>
-                                    <p class="text-sm font-semibold">{{ $grn->grn_number }}</p>
-                                    <p class="text-xs text-gray-500">Goods receipt note</p>
+                                <div class="min-w-0">
+                                    <p class="qs-link-card-title">{{ $grn->grn_number }}</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">
+                                        @if ($grn->isVoided())
+                                            <span class="qs-grn-badge-voided"><i class="fas fa-ban text-[0.5rem]"></i> Voided</span>
+                                            · Reversed from stock
+                                        @else
+                                            Posted · {{ $grn->received_at?->format('d M Y') ?? 'Goods receipt note' }}
+                                        @endif
+                                    </p>
                                 </div>
                             </div>
-                            <i class="fas fa-arrow-right text-gray-300"></i>
+                            <i class="fas fa-arrow-right text-gray-300 shrink-0"></i>
                         </a>
                     @endforeach
                 </div>

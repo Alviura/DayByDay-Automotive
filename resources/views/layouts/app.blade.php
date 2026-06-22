@@ -239,11 +239,8 @@
                 </a>
             @endcan
             @can('transfers.view')
-                <a href="{{ route('transfer-requests.index') }}" class="sb-link {{ request()->routeIs('transfer-requests.*') ? 'active' : '' }}">
-                    <i class="fas fa-right-left w-4 text-center text-teal-400"></i> Transfer Requests
-                </a>
-                <a href="{{ route('stock-transfers.index') }}" class="sb-link {{ request()->routeIs('stock-transfers.*') ? 'active' : '' }}">
-                    <i class="fas fa-truck w-4 text-center text-teal-300"></i> Stock Transfers
+                <a href="{{ route('transfers.index') }}" class="sb-link {{ request()->routeIs('transfers.*') ? 'active' : '' }}">
+                    <i class="fas fa-right-left w-4 text-center text-teal-400"></i> Stock Transfers
                 </a>
             @endcan
             @can('sales.view')
@@ -251,9 +248,24 @@
                     <i class="fas fa-receipt w-4 text-center text-orange-300"></i> Sales
                 </a>
             @endcan
+            @can('sales.hold')
+                <a href="{{ route('sales.order') }}" class="sb-link {{ request()->routeIs('sales.order') ? 'active' : '' }}">
+                    <i class="fas fa-clipboard-list w-4 text-center text-orange-300"></i> Order Entry
+                </a>
+            @endcan
             @can('sales.create')
-                <a href="{{ route('sales.pos') }}" class="sb-link {{ request()->routeIs('sales.pos', 'receipts.*') ? 'active' : '' }}">
-                    <i class="fas fa-cash-register w-4 text-center text-orange-400"></i> Point of Sale
+                <a href="{{ route('sales.desk') }}" class="sb-link {{ request()->routeIs('sales.desk', 'sales.desk.checkout', 'receipts.*') ? 'active' : '' }}">
+                    <i class="fas fa-cash-register w-4 text-center text-orange-400"></i> Cash Desk
+                </a>
+            @endcan
+            @can('customer_accounts.view')
+                <a href="{{ route('customer-accounts.index') }}" class="sb-link {{ request()->routeIs('customer-accounts.*') ? 'active' : '' }}">
+                    <i class="fas fa-bus w-4 text-center text-amber-300"></i> Fleet Accounts
+                </a>
+            @endcan
+            @can('customer_invoices.view')
+                <a href="{{ route('customer-invoices.index') }}" class="sb-link {{ request()->routeIs('customer-invoices.*') ? 'active' : '' }}">
+                    <i class="fas fa-file-invoice-dollar w-4 text-center text-amber-400"></i> Invoices
                 </a>
             @endcan
             @can('returns.view')
@@ -328,8 +340,18 @@
                 @endcan
             @endcanany
 
-            @canany(['users.view', 'roles.view'])
+            @canany(['users.view', 'roles.view', 'employees.view', 'payroll.view'])
                 <p class="sb-section">Administration</p>
+                @can('employees.view')
+                    <a href="{{ route('employees.index') }}" class="sb-link {{ request()->routeIs('employees.*') ? 'active' : '' }}">
+                        <i class="fas fa-id-badge w-4 text-center text-teal-400"></i> Employees
+                    </a>
+                @endcan
+                @can('payroll.view')
+                    <a href="{{ route('payroll.index') }}" class="sb-link {{ request()->routeIs('payroll.*') ? 'active' : '' }}">
+                        <i class="fas fa-money-check-dollar w-4 text-center text-lime-400"></i> Payroll
+                    </a>
+                @endcan
                 @can('users.view')
                     <a href="{{ route('users.index') }}" class="sb-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
                         <i class="fas fa-users-gear w-4 text-center text-sky-400"></i> Users
@@ -541,5 +563,7 @@
     </div>{{-- #ddb-main --}}
 
     @stack('scripts')
+
+    <x-ui.confirm-dialog />
 </body>
 </html>

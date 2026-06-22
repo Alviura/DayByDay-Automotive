@@ -210,8 +210,7 @@
                                             </a>
                                         @endcan
                                         @can('products.archive')
-                                            <form action="{{ route('products.destroy', $product) }}" method="POST" class="inline"
-                                                  onsubmit="return confirm('Delete {{ addslashes($product->name) }}?');">
+                                            <form action="{{ route('products.destroy', $product) }}" method="POST" class="inline" data-confirm="Delete {{ addslashes($product->name) }}?" data-confirm-variant="danger">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="mi-action del" title="Delete">
@@ -258,8 +257,7 @@
                                 <a href="{{ route('products.edit', $product) }}" class="mi-action edit"><i class="fas fa-pen"></i></a>
                             @endcan
                             @can('products.archive')
-                                <form action="{{ route('products.destroy', $product) }}" method="POST" class="inline"
-                                      onsubmit="return confirm('Delete {{ addslashes($product->name) }}?');">
+                                <form action="{{ route('products.destroy', $product) }}" method="POST" class="inline" data-confirm="Delete {{ addslashes($product->name) }}?" data-confirm-variant="danger">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="mi-action del" title="Delete">

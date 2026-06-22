@@ -22,8 +22,7 @@
                 <a href="{{ route('stock-adjustments.index') }}" class="mi-btn-ghost"><i class="fas fa-arrow-left text-xs"></i> Back</a>
                 @if ($stockAdjustment->canSubmit())
                     @can('inventory.adjust')
-                        <form action="{{ route('stock-adjustments.submit', $stockAdjustment) }}" method="POST" class="inline"
-                              onsubmit="return confirm('Submit this adjustment for approval?');">
+                        <form action="{{ route('stock-adjustments.submit', $stockAdjustment) }}" method="POST" class="inline" data-confirm="Submit this adjustment for approval?">
                             @csrf
                             <button type="submit" class="mi-btn-orange">
                                 <i class="fas fa-paper-plane text-xs"></i> Submit for Approval
@@ -123,8 +122,7 @@
 
                     @if ($stockAdjustment->status === 'draft')
                         @can('inventory.adjust')
-                            <form action="{{ route('stock-adjustments.destroy', $stockAdjustment) }}" method="POST" class="mt-4"
-                                  onsubmit="return confirm('Delete this draft?');">
+                            <form action="{{ route('stock-adjustments.destroy', $stockAdjustment) }}" method="POST" class="mt-4" data-confirm="Delete this draft?" data-confirm-variant="danger">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="mi-btn-danger w-full justify-center">

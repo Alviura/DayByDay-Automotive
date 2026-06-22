@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\InventoryException;
+use App\Http\Requests\ClosePurchaseOrderShortRequest;
 use App\Http\Requests\StoreGoodsReceiptRequest;
+use App\Http\Requests\VoidGoodsReceiptRequest;
 use App\Models\GoodsReceiptNote;
 use App\Models\GoodsReceiptNoteItem;
 use App\Models\PurchaseOrder;
@@ -18,19 +20,29 @@ class GoodsReceiptController extends Controller
     public function __construct(private GoodsReceiptService $goodsReceipt)
     {
         $this->middleware('permission:procurement.view')->only(['index', 'show']);
-        $this->middleware('permission:procurement.manage')->only(['create', 'store']);
+        $this->middleware('permission:procurement.manage')->only(['create', 'store', 'void']);
     }
 
     public function index(Request $request): View
     {
+        $postedScope = GoodsReceiptNote::query()->posted();
+
         $stats = [
-            'total' => GoodsReceiptNote::count(),
-            'this_month' => GoodsReceiptNote::whereMonth('received_at', now()->month)
+            'total' => (clone $postedScope)->count(),
+            'this_month' => (clone $postedScope)->whereMonth('received_at', now()->month)
                 ->whereYear('received_at', now()->year)
                 ->count(),
-            'total_received' => GoodsReceiptNoteItem::normalizeQuantity(GoodsReceiptNoteItem::sum('received_quantity')),
-            'total_damaged' => GoodsReceiptNoteItem::normalizeQuantity(GoodsReceiptNoteItem::sum('damaged_quantity')),
-            'with_damage' => GoodsReceiptNote::whereHas('items', fn ($q) => $q->where('damaged_quantity', '>', 0))->count(),
+            'total_received' => GoodsReceiptNoteItem::normalizeQuantity(
+                GoodsReceiptNoteItem::query()
+                    ->whereHas('goodsReceiptNote', fn ($q) => $q->posted())
+                    ->sum('received_quantity')
+            ),
+            'total_damaged' => GoodsReceiptNoteItem::normalizeQuantity(
+                GoodsReceiptNoteItem::query()
+                    ->whereHas('goodsReceiptNote', fn ($q) => $q->posted())
+                    ->sum('damaged_quantity')
+            ),
+            'with_damage' => (clone $postedScope)->whereHas('items', fn ($q) => $q->where('damaged_quantity', '>', 0))->count(),
         ];
         $stats['total_good'] = max(0, round($stats['total_received'] - $stats['total_damaged'], 2));
 
@@ -48,6 +60,9 @@ class GoodsReceiptController extends Controller
                 });
             })
             ->when($request->warehouse_id, fn ($q) => $q->where('warehouse_id', $request->warehouse_id))
+            ->when($request->status === 'voided', fn ($q) => $q->where('status', 'voided'))
+            ->when($request->status === 'posted', fn ($q) => $q->posted())
+            ->when(! $request->status, fn ($q) => $q->posted())
             ->when($request->damage === 'yes', fn ($q) => $q->whereHas('items', fn ($i) => $i->where('damaged_quantity', '>', 0)))
             ->when($request->damage === 'no', fn ($q) => $q->whereDoesntHave('items', fn ($i) => $i->where('damaged_quantity', '>', 0)))
             ->when($request->sort === 'oldest', fn ($q) => $q->oldest('received_at'))
@@ -99,11 +114,23 @@ class GoodsReceiptController extends Controller
     {
         $goodsReceiptNote->load([
             'items.product.unit', 'items.product.productName',
-            'warehouse', 'receiver',
+            'warehouse', 'receiver', 'voidedBy',
             'purchaseOrder.supplier', 'purchaseOrder.quotationSeries',
             'quotationSeries',
         ]);
 
         return view('goods-receipts.show', compact('goodsReceiptNote'));
+    }
+
+    public function void(VoidGoodsReceiptRequest $request, GoodsReceiptNote $goodsReceiptNote): RedirectResponse
+    {
+        try {
+            $this->goodsReceipt->void($goodsReceiptNote, $request->reason);
+
+            return redirect()->route('goods-receipts.show', $goodsReceiptNote)
+                ->with('status', 'Goods receipt '.$goodsReceiptNote->grn_number.' has been voided and inventory reversed.');
+        } catch (InventoryException|\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 }

@@ -26,7 +26,6 @@
                 <p class="text-sm font-semibold mb-4">Period Summary</p>
                 <dl class="space-y-2 text-sm">
                     <div class="flex justify-between"><dt class="text-gray-500">Transactions</dt><dd>{{ $summary['transaction_count'] }}</dd></div>
-                    <div class="flex justify-between"><dt class="text-gray-500">Discounts</dt><dd>{{ number_format($summary['discounts'], 2) }}</dd></div>
                     <div class="flex justify-between"><dt class="text-gray-500">Tax Collected</dt><dd>{{ number_format($summary['tax_collected'], 2) }}</dd></div>
                     <div class="flex justify-between font-semibold border-t pt-2"><dt>Net Revenue</dt><dd class="text-orange-600">{{ number_format($summary['net_revenue'], 2) }}</dd></div>
                 </dl>

@@ -22,6 +22,9 @@ class PurchaseOrder extends Model
         'currency',
         'total',
         'notes',
+        'closed_short_at',
+        'closed_short_by',
+        'close_short_reason',
         'created_by',
     ];
 
@@ -29,6 +32,7 @@ class PurchaseOrder extends Model
         'order_date' => 'date',
         'expected_date' => 'date',
         'total' => 'decimal:2',
+        'closed_short_at' => 'datetime',
     ];
 
     public static function generateNumber(): string
@@ -75,6 +79,11 @@ class PurchaseOrder extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function closedShortBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'closed_short_by');
+    }
+
     public function statusLabel(): string
     {
         return match ($this->status) {
@@ -82,6 +91,7 @@ class PurchaseOrder extends Model
             'sent' => 'Sent',
             'partially_received' => 'Partially Received',
             'received' => 'Fully Received',
+            'closed_short' => 'Closed Short',
             'cancelled' => 'Cancelled',
             default => ucfirst($this->status),
         };
@@ -100,6 +110,76 @@ class PurchaseOrder extends Model
     public function canReceive(): bool
     {
         return in_array($this->status, ['sent', 'partially_received'], true);
+    }
+
+    public function canCloseShort(): bool
+    {
+        if (! in_array($this->status, ['sent', 'partially_received'], true)) {
+            return false;
+        }
+
+        $items = $this->relationLoaded('items') ? $this->items : $this->items()->get();
+
+        return $items->contains(fn ($item) => $item->remainingQuantity() > 0.001);
+    }
+
+    public function isReceiptComplete(): bool
+    {
+        if ($this->status === 'closed_short') {
+            return true;
+        }
+
+        $this->loadMissing('items');
+
+        if ($this->items->isEmpty()) {
+            return false;
+        }
+
+        return $this->items->every(
+            fn ($item) => (float) $item->received_quantity >= (float) $item->quantity
+        );
+    }
+
+    public function hasAnyReceipt(): bool
+    {
+        $this->loadMissing('items');
+
+        return $this->items->contains(fn ($item) => (float) $item->received_quantity > 0);
+    }
+
+    public function receiptStateIsStale(): bool
+    {
+        if ($this->status === 'closed_short') {
+            return false;
+        }
+
+        $this->loadMissing('items');
+
+        $allReceived = $this->isReceiptComplete();
+        $anyReceived = $this->hasAnyReceipt();
+
+        $expectedStatus = $allReceived
+            ? 'received'
+            : ($anyReceived ? 'partially_received' : 'sent');
+
+        if ($this->status !== $expectedStatus) {
+            return true;
+        }
+
+        if (! $anyReceived && $this->delivery_status === 'delivered') {
+            return true;
+        }
+
+        if ($allReceived && $this->delivery_status !== 'delivered') {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function totalShortQuantity(): float
+    {
+        return round((float) $this->items->sum(fn ($item) => $item->remainingQuantity()), 2);
     }
 
     public function totalOrderedQuantity(): float

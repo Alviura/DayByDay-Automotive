@@ -7,6 +7,11 @@ use App\Enums\ApprovalStatus;
 use App\Exceptions\ApprovalException;
 use App\Http\Requests\ApprovalActionRequest;
 use App\Models\Approval;
+use App\Models\ApprovalDemonstration;
+use App\Models\QuotationSeries;
+use App\Models\ReturnRecord;
+use App\Models\StockAdjustment;
+use App\Models\TransferRequest;
 use App\Services\ApprovalService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -61,14 +66,26 @@ class ApprovalController extends Controller
             'returned' => Approval::where('status', ApprovalStatus::Returned)->count(),
         ];
 
-        $modules = config('approvals.modules', []);
+        $modules = collect(config('approvals.modules', []))
+            ->reject(fn ($meta) => ($meta['legacy'] ?? false) && ($meta['pipeline'] ?? true) === false)
+            ->all();
 
-        return view('approvals.index', compact('approvals', 'stats', 'filter', 'modules'));
+        $pipeline = $this->buildPipeline($request, $filter);
+
+        return view('approvals.index', compact('approvals', 'stats', 'filter', 'modules', 'pipeline'));
     }
 
     public function show(Approval $approval): View
     {
-        $approval->load(['requester', 'currentApprover', 'approvable', 'actions.actor']);
+        $approval->load(['requester', 'currentApprover', 'actions.actor']);
+
+        $approval->loadMorph('approvable', [
+            TransferRequest::class => ['items.product.unit', 'source', 'destination', 'requester'],
+            StockAdjustment::class => ['items.product', 'location', 'creator'],
+            QuotationSeries::class => ['items.product', 'supplier'],
+            ReturnRecord::class => ['items.product', 'sale', 'supplier', 'shop', 'warehouse'],
+            ApprovalDemonstration::class => [],
+        ]);
 
         $canAct = $this->approvalService->canAct($approval, auth()->user());
 
@@ -93,5 +110,38 @@ class ApprovalController extends Controller
         } catch (ApprovalException $e) {
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * @return list<array{key: string, label: string, icon: string, count: int}>
+     */
+    private function buildPipeline(Request $request, string $filter): array
+    {
+        $pendingByModule = $this->approvalService->pendingCountByModule(
+            $filter === 'mine' ? auth()->user() : null
+        );
+
+        $steps = [
+            ['key' => '', 'label' => 'All modules', 'icon' => 'fa-layer-group', 'count' => array_sum($pendingByModule)],
+        ];
+
+        foreach (config('approvals.modules', []) as $key => $meta) {
+            if (! ($meta['pipeline'] ?? true)) {
+                continue;
+            }
+
+            if (! isset(config('approvals.module_models')[$key])) {
+                continue;
+            }
+
+            $steps[] = [
+                'key' => $key,
+                'label' => $meta['label'],
+                'icon' => $meta['icon'],
+                'count' => $pendingByModule[$key] ?? 0,
+            ];
+        }
+
+        return $steps;
     }
 }

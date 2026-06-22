@@ -28,8 +28,10 @@ class DatabaseSeeder extends Seeder
             ProcurementSeeder::class,
             TransferSeeder::class,
             SaleSeeder::class,
+            CustomerAccountSeeder::class,
             ReturnSeeder::class,
             AuditLogSeeder::class,
+            EmployeeSeeder::class,
         ]);
     }
 }

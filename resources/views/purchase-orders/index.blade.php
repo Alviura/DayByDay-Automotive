@@ -124,7 +124,8 @@
                             <option value="">All statuses</option>
                             <option value="sent" @selected(request('status') === 'sent')>Sent</option>
                             <option value="partially_received" @selected(request('status') === 'partially_received')>Partially Received</option>
-                            <option value="received" @selected(request('status') === 'received')>Fully Received</option>
+                            <option value="received" @selected(request('status') === 'received')>Fully Received / Closed Short</option>
+                            <option value="closed_short" @selected(request('status') === 'closed_short')>Closed Short Only</option>
                             <option value="cancelled" @selected(request('status') === 'cancelled')>Cancelled</option>
                         </select>
                     </div>
