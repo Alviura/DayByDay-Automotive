@@ -5,21 +5,29 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreWarehouseRequest;
 use App\Http\Requests\UpdateWarehouseRequest;
 use App\Models\Warehouse;
+use App\Services\LocationOverviewService;
+use App\Services\WarehouseAccessService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class WarehouseController extends Controller
 {
-    public function __construct()
-    {
+    public function __construct(
+        private LocationOverviewService $overview,
+        private WarehouseAccessService $warehouseAccess,
+    ) {
         $this->middleware('permission:warehouses.view')->only(['index', 'show']);
         $this->middleware('permission:warehouses.manage')->only(['create', 'store', 'edit', 'update', 'destroy']);
     }
 
     public function index(Request $request): View
     {
-        $warehouses = Warehouse::query()
+        $scopedWarehouseId = $this->warehouseAccess->scopedWarehouseId(auth()->user());
+
+        $baseQuery = Warehouse::query()->when($scopedWarehouseId, fn ($q) => $q->whereKey($scopedWarehouseId));
+
+        $warehouses = (clone $baseQuery)
             ->search($request->search)
             ->when($request->status === 'active', fn ($q) => $q->where('is_active', true))
             ->when($request->status === 'inactive', fn ($q) => $q->where('is_active', false))
@@ -33,14 +41,14 @@ class WarehouseController extends Controller
             ->withQueryString();
 
         $stats = [
-            'total' => Warehouse::count(),
-            'active' => Warehouse::where('is_active', true)->count(),
-            'inactive' => Warehouse::where('is_active', false)->count(),
-            'with_address' => Warehouse::whereNotNull('address')->where('address', '!=', '')->count(),
+            'total' => (clone $baseQuery)->count(),
+            'active' => (clone $baseQuery)->where('is_active', true)->count(),
+            'inactive' => (clone $baseQuery)->where('is_active', false)->count(),
+            'with_address' => (clone $baseQuery)->whereNotNull('address')->where('address', '!=', '')->count(),
         ];
 
-        $codes = Warehouse::orderBy('code')->pluck('code', 'code');
-        $addresses = Warehouse::whereNotNull('address')->where('address', '!=', '')->orderBy('address')->pluck('address', 'address');
+        $codes = (clone $baseQuery)->orderBy('code')->pluck('code', 'code');
+        $addresses = (clone $baseQuery)->whereNotNull('address')->where('address', '!=', '')->orderBy('address')->pluck('address', 'address');
 
         return view('warehouses.index', compact('warehouses', 'stats', 'codes', 'addresses'));
     }
@@ -63,12 +71,25 @@ class WarehouseController extends Controller
         return redirect()->route('warehouses.index')->with('status', 'Warehouse created successfully.');
     }
 
-    public function show(Warehouse $warehouse): View
+    public function show(Warehouse $warehouse): View|RedirectResponse
     {
+        $scopedWarehouseId = $this->warehouseAccess->scopedWarehouseId(auth()->user());
+        if ($scopedWarehouseId && (int) $warehouse->id !== $scopedWarehouseId) {
+            return redirect()->route('warehouses.index')
+                ->with('error', 'You can only view your assigned warehouse.');
+        }
+
         $warehouse->loadCount(['users', 'stockBalances'])
             ->load(['users' => fn ($q) => $q->orderBy('name')->limit(10)]);
 
-        return view('warehouses.show', compact('warehouse'));
+        $inventory = $this->overview->inventoryContext($warehouse);
+        $activity = $this->overview->warehouseActivity($warehouse);
+
+        return view('warehouses.show', array_merge(
+            compact('warehouse'),
+            $inventory,
+            $activity
+        ));
     }
 
     public function edit(Warehouse $warehouse): View

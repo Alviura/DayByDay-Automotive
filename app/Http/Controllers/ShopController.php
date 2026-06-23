@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreShopRequest;
 use App\Http\Requests\UpdateShopRequest;
 use App\Models\Shop;
+use App\Services\LocationOverviewService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ShopController extends Controller
 {
-    public function __construct()
+    public function __construct(private LocationOverviewService $overview)
     {
         $this->middleware('permission:shops.view')->only(['index', 'show']);
         $this->middleware('permission:shops.manage')->only(['create', 'store', 'edit', 'update', 'destroy']);
@@ -68,7 +69,14 @@ class ShopController extends Controller
         $shop->loadCount(['users', 'stockBalances'])
             ->load(['users' => fn ($q) => $q->orderBy('name')->limit(10)]);
 
-        return view('shops.show', compact('shop'));
+        $inventory = $this->overview->inventoryContext($shop);
+        $activity = $this->overview->shopActivity($shop);
+
+        return view('shops.show', array_merge(
+            compact('shop'),
+            $inventory,
+            $activity
+        ));
     }
 
     public function edit(Shop $shop): View
