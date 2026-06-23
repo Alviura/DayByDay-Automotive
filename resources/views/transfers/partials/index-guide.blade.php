@@ -1,10 +1,10 @@
-<x-module.form-guide subtitle="Warehouse to shop distribution">
+<x-module.form-guide subtitle="Operational stock movements">
     <section class="mi-guide-section mi-guide-section-first">
         <h3 class="mi-guide-section-title">
-            <i class="fas fa-right-left"></i> One module, full journey
+            <i class="fas fa-right-left"></i> Stock transfers
         </h3>
         <p class="mi-guide-text">
-            Each transfer record covers the complete lifecycle — from draft request through dispatch to shop receipt. No separate screens for in-transit stock.
+            Create and manage actual stock movements. Transfers from accepted requests appear here, or create directly from warehouse.
         </p>
     </section>
 
@@ -14,8 +14,8 @@
         </h3>
         <ul class="mi-guide-list">
             <li><strong>Draft</strong><span>Create lines with live source availability.</span></li>
-            <li><strong>Pending</strong><span>Awaiting approval.</span></li>
-            <li><strong>Approved</strong><span>Stock reserved at source.</span></li>
+            <li><strong>Pending</strong><span>Awaiting administrator approval.</span></li>
+            <li><strong>Approved</strong><span>Stock reserved at source — ready to dispatch.</span></li>
             <li><strong>In transit</strong><span>Dispatched — receive at destination.</span></li>
             <li><strong>Completed</strong><span>Inventory updated both sides.</span></li>
         </ul>

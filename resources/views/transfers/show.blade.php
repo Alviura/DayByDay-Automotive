@@ -39,7 +39,7 @@
             </div>
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('transfers.index') }}" class="mi-btn-ghost"><i class="fas fa-arrow-left text-xs"></i> Back</a>
-                @if ($transfer->canSubmit())
+                @if ($transfer->canSubmit() && ($canManage ?? true))
                     @can('transfers.request')
                         <form action="{{ route('transfers.submit', $transfer) }}" method="POST" class="inline" data-confirm="Submit this transfer for approval?" data-confirm-variant="warning">
                             @csrf
@@ -48,16 +48,18 @@
                     @endcan
                 @endif
                 @if ($transfer->canDispatch())
-                    @can('transfers.dispatch')
-                        <form action="{{ route('transfers.dispatch', $transfer) }}" method="POST" class="inline"
-                              data-confirm="Dispatch stock from source? Quantities will leave the source location."
-                              data-confirm-variant="warning" data-confirm-label="Dispatch">
-                            @csrf
-                            <button type="submit" class="mi-btn-orange"><i class="fas fa-truck text-xs"></i> Dispatch</button>
-                        </form>
-                    @endcan
+                    @if ($canDispatch ?? true)
+                        @can('transfers.dispatch')
+                            <form action="{{ route('transfers.dispatch', $transfer) }}" method="POST" class="inline"
+                                  data-confirm="Dispatch stock from source? Quantities will leave the source location."
+                                  data-confirm-variant="warning" data-confirm-label="Dispatch">
+                                @csrf
+                                <button type="submit" class="mi-btn-orange"><i class="fas fa-truck text-xs"></i> Dispatch</button>
+                            </form>
+                        @endcan
+                    @endif
                 @endif
-                @if ($st && $st->canReceive())
+                @if ($st && $st->canReceive() && ($canReceive ?? true))
                     @can('transfers.receive')
                         <a href="{{ route('transfers.receive', $transfer) }}" class="mi-btn-orange">
                             <i class="fas fa-truck-ramp-box text-xs"></i> Receive
@@ -65,10 +67,25 @@
                     @endcan
                 @endif
                 @if ($transfer->approval)
-                    <a href="{{ route('approvals.show', $transfer->approval) }}" class="mi-btn-ghost">Approval</a>
+                    @can('approvals.act')
+                        <a href="{{ route('approvals.show', $transfer->approval) }}" class="mi-btn-ghost">Approval</a>
+                    @endcan
                 @endif
             </div>
         </div>
+
+        @if ($isReadOnlyInbound ?? false)
+            <div class="tr-banner tr-banner-info no-print">
+                <i class="fas fa-circle-info"></i>
+                <span>
+                    @if ($transfer->type === 'shop_to_warehouse')
+                        Shop return to your warehouse — view and receive only. Created by the shop and approved by administrators.
+                    @else
+                        Warehouse distribution to your shop — view and receive only. Created and approved by administrators.
+                    @endif
+                </span>
+            </div>
+        @endif
 
         {{-- Workflow --}}
         @if (! in_array($transfer->status, ['rejected', 'cancelled'], true))
@@ -112,7 +129,7 @@
                     <p class="mi-kpi-label">Destination</p>
                     <p class="mi-kpi-value text-status" style="font-size:1rem">{{ Str::limit($transfer->destinationLabel(), 16) }}</p>
                 </div>
-                <div class="mi-kpi-icon"><i class="fas fa-store"></i></div>
+                <div class="mi-kpi-icon"><i class="fas fa-{{ $transfer->isWarehouseDestination() ? 'warehouse' : 'store' }}"></i></div>
             </div>
             <div class="mi-kpi mi-kpi-orange">
                 <div>
@@ -237,7 +254,7 @@
                         </ul>
                     </section>
 
-                    @if ($transfer->status === 'draft')
+                    @if ($transfer->status === 'draft' && ($canManage ?? true))
                         @can('transfers.request')
                             <section class="mi-guide-section">
                                 <form action="{{ route('transfers.destroy', $transfer) }}" method="POST"

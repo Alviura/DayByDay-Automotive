@@ -94,6 +94,53 @@
     }
     @media (max-width: 1024px) { .tr-show-grid { grid-template-columns: 1fr; } }
 
+    .tr-workflow-track {
+        display: flex; align-items: flex-start; gap: 0;
+        overflow-x: auto; padding: .25rem 0;
+    }
+    .tr-workflow-step {
+        flex: 1; min-width: 5.5rem; text-align: center; position: relative;
+    }
+    .tr-workflow-step:not(:last-child)::after {
+        content: ''; position: absolute; top: 1rem; left: 50%; width: 100%; height: 2px;
+        background: #e5e7eb; z-index: 0;
+    }
+    .tr-workflow-step.done:not(:last-child)::after { background: #fdba74; }
+    .tr-workflow-dot {
+        width: 2rem; height: 2rem; border-radius: 50%; margin: 0 auto .4rem;
+        display: flex; align-items: center; justify-content: center;
+        font-size: .7rem; border: 2px solid #e5e7eb; background: #fff;
+        color: #9ca3af; position: relative; z-index: 1;
+    }
+    .tr-workflow-step.done .tr-workflow-dot {
+        border-color: #ff6b35; background: #fff7ed; color: #ea580c;
+    }
+    .tr-workflow-step.current .tr-workflow-dot {
+        border-color: #ff6b35; background: #ff6b35; color: #fff;
+        box-shadow: 0 0 0 4px rgba(255,107,53,.15);
+    }
+    .tr-workflow-label {
+        font-size: .62rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .04em; color: #9ca3af; line-height: 1.3;
+    }
+    .tr-workflow-step.current .tr-workflow-label { color: #ea580c; }
+    .tr-workflow-step.done .tr-workflow-label { color: #6b7280; }
+    form.tr-workflow-step-action { margin: 0; padding: 0; border: none; background: transparent; }
+    .tr-workflow-step-btn {
+        display: block; width: 100%; margin: 0; padding: 0; border: none; background: transparent;
+        cursor: pointer; font: inherit; text-align: center;
+    }
+    .tr-workflow-step-btn:focus-visible .tr-workflow-dot {
+        outline: 2px solid #ea580c; outline-offset: 2px;
+    }
+    .tr-workflow-step-action.current .tr-workflow-dot {
+        border-color: #ff6b35; background: #ff6b35; color: #fff;
+        box-shadow: 0 0 0 4px rgba(255,107,53,.15);
+    }
+    .tr-workflow-step-action:hover .tr-workflow-dot {
+        background: #ea580c; border-color: #ea580c;
+    }
+
     .tr-show-workflow {
         display: flex; flex-wrap: wrap; gap: .5rem;
     }
@@ -116,10 +163,22 @@
     .tr-show-step.current .tr-show-step-icon { color: #ea580c; border-color: #fed7aa; }
     .tr-show-step-label { font-size: .62rem; font-weight: 700; color: #6b7280; text-align: center; text-transform: uppercase; letter-spacing: .04em; }
     .tr-show-step.current .tr-show-step-label { color: #c2410c; }
+    button.tr-show-step-action {
+        font: inherit; width: 100%;
+    }
+    button.tr-show-step-action:focus-visible {
+        outline: 2px solid #ea580c; outline-offset: 2px;
+    }
 
     .tr-show-banner {
         display: flex; align-items: flex-start; gap: .75rem;
         padding: .85rem 1.15rem; border-radius: 10px;
         background: #fff7ed; border: 1px solid #fed7aa;
     }
+
+    .tr-banner {
+        border-radius: 10px; border: 1px solid; padding: .75rem 1rem;
+        font-size: .82rem; display: flex; align-items: center; gap: .5rem;
+    }
+    .tr-banner-info { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
 </style>

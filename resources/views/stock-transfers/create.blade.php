@@ -1,4 +1,4 @@
-<x-app-layout title="New Transfer">
+<x-app-layout title="New Stock Transfer">
     @push('styles')
         <x-module.page-index-styles />
         @include('transfers.partials.page-styles')
@@ -6,11 +6,11 @@
 
     <x-module.form-page
         title="New Stock Transfer"
-        :subtitle="$lockedShop ? 'Move stock from your shop or return it to the warehouse.' : ($lockedWarehouse ? 'Distribute stock from your warehouse to shops.' : 'Move stock from warehouse to shop, between shops, or back to warehouse.')"
+        :subtitle="$lockedWarehouse ? 'Distribute stock from your warehouse.' : 'Move stock between warehouse and shops.'"
         icon="fa-right-left"
         card-title="Transfer Details"
-        :back-url="route('transfers.index')"
-        :action="route('transfers.store')"
+        :back-url="route('stock-transfers.index')"
+        :action="route('stock-transfers.store')"
         submit-label="Save Draft"
     >
         <x-transfer.form-fields
@@ -19,15 +19,12 @@
             :products="$products"
             :prefill="$prefill"
             :allowed-types="$allowedTypes"
-            :locked-shop="$lockedShop"
             :locked-warehouse="$lockedWarehouse"
+            availability-url="{{ route('stock-transfers.availability') }}"
         />
 
         <x-slot:guide>
-            <x-transfer.form-guide
-                :for-shop-manager="(bool) $lockedShop"
-                :for-warehouse-manager="(bool) $lockedWarehouse"
-            />
+            <x-transfer.form-guide :for-warehouse-manager="(bool) $lockedWarehouse" />
         </x-slot:guide>
     </x-module.form-page>
 </x-app-layout>
