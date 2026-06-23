@@ -24,6 +24,8 @@ class ApprovalDecidedNotification extends Notification
     public function toArray(object $notifiable): array
     {
         return [
+            'type' => 'approval',
+            'icon' => 'fa-clipboard-check',
             'approval_id' => $this->approval->id,
             'title' => 'Approval '.$this->decision->label(),
             'message' => $this->approval->documentTitle().' was '.$this->decision->label().'.',

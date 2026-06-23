@@ -20,6 +20,8 @@ class ApprovalPendingNotification extends Notification
     public function toArray(object $notifiable): array
     {
         return [
+            'type' => 'approval',
+            'icon' => 'fa-clipboard-check',
             'approval_id' => $this->approval->id,
             'title' => 'Approval required',
             'message' => $this->approval->documentTitle().' is awaiting your decision.',
