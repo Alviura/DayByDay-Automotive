@@ -12,7 +12,7 @@
             <a href="{{ route('reports.index') }}" class="mi-btn-ghost">All Reports</a>
         </div>
 
-        <x-reports.filters :filters="$filters" :report-type="$reportType" :shops="$shops" :scoped-shop-id="$scopedShopId" />
+        <x-reports.filters :filters="$filters" :report-type="$reportType" :definition="$definition ?? []" :shops="$shops" :warehouses="$warehouses ?? collect()" :suppliers="$suppliers ?? collect()" :scoped-shop-id="$scopedShopId" :scoped-warehouse-id="$scopedWarehouseId ?? null" />
 
         <div class="mi-kpi-row">
             <div class="mi-kpi mi-kpi-purple"><div><p class="mi-kpi-label">Transactions</p><p class="mi-kpi-value">{{ $summary['transaction_count'] }}</p></div></div>
@@ -45,11 +45,12 @@
                 <div class="mi-card-head"><span class="text-sm font-semibold">Top Products</span></div>
                 <div class="mi-table-wrap">
                     <table class="mi-table">
-                        <thead><tr><th>Product</th><th>Qty</th><th>Revenue</th></tr></thead>
+                        <thead><tr><th>Product</th><th>Fitment</th><th>Qty</th><th>Revenue</th></tr></thead>
                         <tbody>
                             @forelse ($topProducts as $row)
                                 <tr>
-                                    <td>{{ $row->part_number }}</td>
+                                    <td>{{ $row->part_number }}<span class="block text-xs text-gray-400">{{ $row->name }}</span></td>
+                                    <td class="text-gray-600 text-sm">{{ $row->fitment ?? '—' }}</td>
                                     <td>{{ number_format($row->qty_sold, 0) }}</td>
                                     <td>{{ number_format($row->revenue, 2) }}</td>
                                 </tr>

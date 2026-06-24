@@ -12,7 +12,7 @@
             <a href="{{ route('reports.index') }}" class="mi-btn-ghost">All Reports</a>
         </div>
 
-        <x-reports.filters :filters="$filters" :report-type="$reportType" :shops="$shops" :scoped-shop-id="$scopedShopId" />
+        <x-reports.filters :filters="$filters" :report-type="$reportType" :definition="$definition ?? []" :shops="$shops" :warehouses="$warehouses ?? collect()" :suppliers="$suppliers ?? collect()" :scoped-shop-id="$scopedShopId" :scoped-warehouse-id="$scopedWarehouseId ?? null" />
 
         <div class="mi-kpi-row">
             <div class="mi-kpi mi-kpi-purple"><div><p class="mi-kpi-label">Open Series</p><p class="mi-kpi-value">{{ $summary['series_open'] }}</p></div></div>

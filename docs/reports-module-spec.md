@@ -2,8 +2,8 @@
 
 **Project:** DayByDay Automotive  
 **Module:** M17 — Reporting & Analytics  
-**Status:** Foundation spec — **do not expand report catalogue until Phase R0 is complete**  
-**Last updated:** 2026-06-20  
+**Status:** Phase R0 complete; **28 reports live** (R0 + R1 wave) — see §5  
+**Last updated:** 2026-06-24  
 **Related docs:** [build-roadmap.md](./build-roadmap.md) (M17), [financial-module-groundwork.md](./financial-module-groundwork.md) (GL reconciliation), [database-erd.md](./database-erd.md)
 
 ---
@@ -265,14 +265,14 @@ See [financial-module-groundwork.md](./financial-module-groundwork.md) §6.4 —
 | ID | Report | Phase | Status | Scope | Primary tables | Key metrics |
 |----|--------|-------|--------|-------|----------------|-------------|
 | R-S01 | **Sales Summary** | R0 | live | shop | `sales`, `sale_items` | Revenue, tax, tickets, daily trend, top products |
-| R-S02 | Sales by Shop | R1 | planned | global | `sales` | Compare revenue & tickets across shops |
-| R-S03 | Sales by Cashier | R1 | planned | shop | `sales`, `users` | Revenue per attendant |
-| R-S04 | Payment Method Mix | R1 | planned | shop | `payments`, `sales` | Cash, M-Pesa, card, etc. (extend financial) |
-| R-S05 | On-Account vs Cash | R1 | planned | shop | `sales` | Credit vs immediate payment |
-| R-S06 | Held / Abandoned Orders | R1 | planned | shop | `sales` | Held count, aging, value at risk |
-| R-S07 | Reversed Sales | R1 | planned | shop | `sales` | Reversals in period, by cashier |
-| R-S08 | Gross Margin | R2 | planned | shop | `sale_items` (+ `unit_cost` R0.8) | Revenue − COGS, margin % |
-| R-S09 | Sales by Category | R2 | planned | shop | `sale_items`, `products`, `categories` | Category revenue mix |
+| R-S02 | Sales by Shop | R1 | live | global | `sales` | Compare revenue & tickets across shops |
+| R-S03 | Sales by Cashier | R1 | live | shop | `sales`, `users` | Revenue per attendant |
+| R-S04 | Payment Method Mix | R1 | live | shop | `payments`, `sales` | Cash, M-Pesa, card, etc. (extend financial) |
+| R-S05 | On-Account vs Cash | R1 | live | shop | `sales` | Credit vs immediate payment (incl. reinstatement) |
+| R-S06 | Held / Abandoned Orders | R1 | live | shop | `sales` | Held count, aging, value at risk |
+| R-S07 | Reversed Sales | R1 | live | shop | `sales` | Reversals in period, by cashier |
+| R-S08 | Gross Margin | R1 | live | shop | `sale_items` (+ `unit_cost` R0.8) | Revenue − COGS, margin % |
+| R-S09 | Sales by Category | R1 | live | shop | `sale_items`, `products`, `categories` | Category revenue mix |
 | R-S10 | Hourly / Day-of-Week | R2 | planned | shop | `sales` | Peak trading patterns |
 | R-S11 | Top Customers / Fleet | R3 | planned | shop | `sales`, `customer_accounts` | Repeat buyers, AR sales |
 
@@ -283,12 +283,12 @@ See [financial-module-groundwork.md](./financial-module-groundwork.md) §6.4 —
 | ID | Report | Phase | Status | Scope | Primary tables | Key metrics |
 |----|--------|-------|--------|-------|----------------|-------------|
 | R-I01 | **Inventory Summary** | R0 | live | shop/wh | `stock_balances` | Valuation by location, low stock |
-| R-I02 | Stock Movements | R1 | planned | shop/wh | `stock_ledger` | Entries by `transaction_type` |
-| R-I03 | Stock Ledger Detail | R1 | planned | shop/wh | `stock_ledger` | Full exportable journal |
-| R-I04 | Stock Adjustments | R1 | planned | shop/wh | `stock_adjustments` | By reason, approver, qty |
+| R-I02 | Stock Movements | R1 | live | shop/wh | `stock_ledger` | Entries by `transaction_type` |
+| R-I03 | Stock Ledger Detail | R1 | live | shop/wh | `stock_ledger` | Full exportable journal |
+| R-I04 | Stock Adjustments | R1 | live | shop/wh | `stock_adjustments` | By reason, approver, qty |
 | R-I05 | Dead / Slow Moving | R2 | planned | global | `stock_ledger`, `sales` | No movement in N days |
 | R-I06 | Zero Stock | R2 | planned | global | `stock_balances`, `sales` | Out of stock with demand |
-| R-I07 | Reorder Worksheet | R1 | planned | global | `stock_balances`, `products` | Below reorder level |
+| R-I07 | Reorder Worksheet | R1 | live | global | `stock_balances`, `products` | Below reorder level (catalog units) |
 | R-I08 | Inter-Location Matrix | R2 | planned | global | `stock_balances` | Same SKU across sites |
 | R-I09 | Damage & Shrinkage | R2 | planned | global | GRN items, transfer items | Damaged qty summary |
 | R-I10 | Inventory Snapshot History | R3 | planned | global | `stock_ledger` (reconstructed) | Month-end valuation trend |
@@ -301,10 +301,10 @@ See [financial-module-groundwork.md](./financial-module-groundwork.md) §6.4 —
 |----|--------|-------|--------|-------|----------------|-------------|
 | R-P01 | **Procurement Summary** | R0 | live | global | `quotation_series`, `purchase_orders`, `goods_receipt_notes` | Series status, PO value, GRN count |
 | R-P02 | Supplier Performance | R1 | planned | global | suppliers, POs, GRNs, returns | Fill rate, lead time, return rate |
-| R-P03 | Open Purchase Orders | R1 | planned | global | `purchase_orders`, `purchase_order_items` | Unreceived lines |
-| R-P04 | PO vs GRN Variance | R1 | planned | global | PO items, GRN items | Short/over receipt |
+| R-P03 | Open Purchase Orders | R1 | live | global | `purchase_orders`, `purchase_order_items` | Unreceived lines |
+| R-P04 | PO vs GRN Variance | R1 | live | global | PO items, GRN items | Short/over receipt |
 | R-P05 | Supplier Payables Aging | R1 | planned | global | `supplier_payments`, POs, GRNs | Outstanding AP |
-| R-P06 | Supplier Payment Register | R1 | planned | global | `supplier_payments` | Payments & voids in period |
+| R-P06 | Supplier Payment Register | R1 | live | global | `supplier_payments` | Payments & voids in period |
 | R-P07 | Landed Cost Analysis | R2 | planned | global | `quotation_series`, `quotation_items` | Quoted vs actual |
 | R-P08 | Procurement Lead Time | R2 | planned | global | series → PO → GRN dates | Days per stage |
 
@@ -315,9 +315,9 @@ See [financial-module-groundwork.md](./financial-module-groundwork.md) §6.4 —
 | ID | Report | Phase | Status | Scope | Primary tables | Key metrics |
 |----|--------|-------|--------|-------|----------------|-------------|
 | R-T01 | **Transfer Activity** | R0 | live | shop | `transfer_requests`, `stock_transfers` | Request status, in-transit (partial) |
-| R-T02 | Stock Transfer Detail | R1 | planned | shop/wh | `stock_transfers`, items | Dispatched vs received, damaged |
-| R-T03 | Transfer Fill Rate | R1 | planned | shop | `transfer_requests` | Accepted vs rejected |
-| R-T04 | In-Transit Aging | R1 | planned | global | `stock_transfers` | Days since dispatch |
+| R-T02 | Stock Transfer Detail | R1 | live | shop/wh | `stock_transfers`, items | Dispatched vs received, damaged |
+| R-T03 | Transfer Fill Rate | R1 | live | shop | `transfer_requests` | Accepted vs rejected |
+| R-T04 | In-Transit Aging | R1 | live | global | `stock_transfers` | Days since dispatch |
 | R-T05 | Warehouse Dispatch Performance | R2 | planned | warehouse | `stock_transfers` | Lines/units dispatched |
 
 ---
@@ -326,8 +326,8 @@ See [financial-module-groundwork.md](./financial-module-groundwork.md) §6.4 —
 
 | ID | Report | Phase | Status | Scope | Primary tables | Key metrics |
 |----|--------|-------|--------|-------|----------------|-------------|
-| R-R01 | Customer Returns Summary | R1 | planned | shop | `returns` (customer) | Refunds, reasons, products |
-| R-R02 | Supplier Returns Summary | R1 | planned | warehouse | `returns` (supplier) | Qty returned to suppliers |
+| R-R01 | Customer Returns Summary | R1 | live | shop | `returns` (customer) | Refunds, reasons, products, fitment |
+| R-R02 | Supplier Returns Summary | R1 | live | warehouse | `returns` (supplier) | Qty returned to suppliers (catalog units) |
 | R-R03 | Return Rate vs Sales | R2 | planned | shop | returns + sales | % returns by product |
 
 ---
@@ -336,9 +336,9 @@ See [financial-module-groundwork.md](./financial-module-groundwork.md) §6.4 —
 
 | ID | Report | Phase | Status | Scope | Primary tables | Key metrics |
 |----|--------|-------|--------|-------|----------------|-------------|
-| R-A01 | AR Aging | R1 | planned | global | `customer_invoices`, accounts | 30/60/90+ buckets |
+| R-A01 | AR Aging | R1 | live | global | `customer_invoices`, accounts | 30/60/90+ buckets |
 | R-A02 | Customer Statement | R1 | planned | account | invoices, payments | Opening, activity, closing |
-| R-A03 | Overdue Invoices | R1 | planned | global | `customer_invoices` | Past due list |
+| R-A03 | Overdue Invoices | R1 | live | global | `customer_invoices` | Past due list |
 | R-A04 | Credit Utilization | R2 | planned | global | `customer_accounts` | Limit vs balance |
 
 ---
@@ -378,7 +378,7 @@ See [financial-module-groundwork.md](./financial-module-groundwork.md) §6.4 —
 | R-G02 | Approval Turnaround | R3 | planned | global | `approval_actions` | Avg time to decision |
 | R-G03 | Audit Log Summary | R2 | planned | global | `audit_logs` | Actions by user/module |
 | R-G04 | User Login Activity | R2 | planned | global | `user_logins` | Logins per user |
-| R-G05 | Product Master Export | R1 | planned | global | `products` | SKU list with attributes |
+| R-G05 | Product Master Export | R1 | live | global | `products` | SKU list with category & vehicle fitment |
 
 ---
 
@@ -568,3 +568,4 @@ Use this order every time reporting work is scheduled:
 | Date | Change |
 |------|--------|
 | 2026-06-20 | Initial comprehensive spec: R0 foundation, catalogue, data contracts, phases |
+| 2026-06-24 | R0 + R1 implemented: 28 live reports, registry, filters, scoping, CSV export; `sale_items.unit_cost`, `returns.completed_at` |
