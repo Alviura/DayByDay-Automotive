@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Support\PermissionRegistry;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreRoleRequest extends FormRequest
 {
@@ -16,7 +18,7 @@ class StoreRoleRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255', 'unique:roles,name'],
             'permissions' => ['array'],
-            'permissions.*' => ['exists:permissions,name'],
+            'permissions.*' => ['string', Rule::in(PermissionRegistry::allNames())],
         ];
     }
 }

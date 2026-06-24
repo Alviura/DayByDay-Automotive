@@ -97,13 +97,20 @@
                     <div class="mi-form-grid">
                         <div>
                             <label class="mi-field-label"><i class="fas fa-warehouse"></i> Receive into Warehouse <span class="text-rose-500">*</span></label>
+                            @if ($scopedWarehouseId ?? null)
+                                <input type="hidden" name="warehouse_id" value="{{ $scopedWarehouseId }}">
+                                <div class="mi-input block w-full bg-gray-50 text-gray-700 cursor-not-allowed">
+                                    {{ $warehouses->firstWhere('id', $scopedWarehouseId)?->name }}
+                                </div>
+                            @else
                             <select name="warehouse_id" class="mi-select" required>
                                 @foreach ($warehouses as $warehouse)
-                                    <option value="{{ $warehouse->id }}" @selected(old('warehouse_id') == $warehouse->id)>
+                                    <option value="{{ $warehouse->id }}" @selected(old('warehouse_id', $defaultWarehouseId ?? null) == $warehouse->id)>
                                         {{ $warehouse->name }} ({{ $warehouse->code }})
                                     </option>
                                 @endforeach
                             </select>
+                            @endif
                             <x-input-error :messages="$errors->get('warehouse_id')" class="mt-1.5" />
                         </div>
                         <div class="mi-span-full">

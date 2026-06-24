@@ -2,10 +2,9 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Product;
 use App\Models\Shop;
 use App\Models\Warehouse;
-use App\Services\InventoryService;
+use App\Services\TransferRequestAccessService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -13,7 +12,7 @@ class StoreTransferRequestRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('transfers.request');
+        return app(TransferRequestAccessService::class)->canCreate($this->user());
     }
 
     public function rules(): array
@@ -33,13 +32,20 @@ class StoreTransferRequestRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             $type = $this->type;
+            $access = app(TransferRequestAccessService::class);
+            $user = $this->user();
+            $scopedShopId = $access->scopedShopId($user);
+            $isAdmin = $access->isAdministrator($user);
+
+            if (! $isAdmin && ! $scopedShopId) {
+                $validator->errors()->add('destination_id', 'You must be assigned to a shop to create transfer requests.');
+
+                return;
+            }
 
             if ($type === 'warehouse_to_shop') {
                 if (! Warehouse::whereKey($this->source_id)->exists()) {
                     $validator->errors()->add('source_id', 'Select a valid warehouse as source.');
-                }
-                if (! Shop::whereKey($this->destination_id)->exists()) {
-                    $validator->errors()->add('destination_id', 'Select a valid shop as destination.');
                 }
             }
 
@@ -47,33 +53,21 @@ class StoreTransferRequestRequest extends FormRequest
                 if (! Shop::whereKey($this->source_id)->exists()) {
                     $validator->errors()->add('source_id', 'Select a valid source shop.');
                 }
-                if (! Shop::whereKey($this->destination_id)->exists()) {
-                    $validator->errors()->add('destination_id', 'Select a valid destination shop.');
+                if ((int) $this->source_id === (int) $this->destination_id) {
+                    $validator->errors()->add('source_id', 'Choose a different shop as the source.');
                 }
             }
 
-            if ($validator->errors()->isNotEmpty()) {
-                return;
+            if (! Shop::whereKey($this->destination_id)->exists()) {
+                $validator->errors()->add('destination_id', 'Select a valid destination shop.');
             }
 
-            $inventory = app(InventoryService::class);
-            $source = $this->sourceModel();
+            if (! $isAdmin && (int) $this->destination_id !== $scopedShopId) {
+                $validator->errors()->add('destination_id', 'Requests must be for your assigned shop.');
+            }
 
-            foreach ($this->items as $index => $item) {
-                $product = Product::find($item['product_id']);
-                if (! $product) {
-                    continue;
-                }
-
-                $available = $inventory->available($product, $source);
-                $requested = (float) $item['requested_quantity'];
-
-                if ($requested > $available + 0.001) {
-                    $validator->errors()->add(
-                        "items.{$index}.requested_quantity",
-                        "{$product->part_number}: only ".number_format($available, 2).' available at source (requested '.number_format($requested, 2).').'
-                    );
-                }
+            if (! $isAdmin && $type === 'inter_shop' && (int) $this->source_id === $scopedShopId) {
+                $validator->errors()->add('source_id', 'Choose a different shop as the source.');
             }
         });
     }

@@ -155,11 +155,20 @@
                         @can('customer_invoices.manage')
                             <section class="mi-guide-section">
                                 <h3 class="mi-guide-section-title"><i class="fas fa-wallet"></i> Record payment</h3>
-                                <div class="ci-pay-panel !p-0" x-data="{ payments: [{ method: 'cash', amount: {{ $balanceDue }}, reference: '' }] }">
+                                <div class="ci-pay-panel !p-0" x-data="{ payments: [{ method: 'cash', amount: {{ $balanceDue }}, reference: '', shop_id: '{{ auth()->user()->shop_id ?? ($shops->first()?->id ?? '') }}' }] }">
                                     <form method="POST" action="{{ route('customer-invoices.record-payment', $customerInvoice) }}">
                                         @csrf
                                         <template x-for="(payment, pi) in payments" :key="pi">
                                             <div class="ci-pay-row">
+                                                <div>
+                                                    <label class="mi-field-label">Shop (till)</label>
+                                                    <select :name="`payments[${pi}][shop_id]`" class="mi-select w-full" x-model="payment.shop_id">
+                                                        <option value="">— Select shop —</option>
+                                                        @foreach ($shops as $shop)
+                                                            <option value="{{ $shop->id }}">{{ $shop->name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
                                                 <div>
                                                     <label class="mi-field-label">Method</label>
                                                     <select :name="`payments[${pi}][method]`" class="mi-select w-full" x-model="payment.method">
@@ -194,7 +203,7 @@
                                 @foreach ($customerInvoice->payments as $payment)
                                     <li>
                                         <strong>{{ $payment->methodLabel() }}</strong>
-                                        <span>KES {{ number_format($payment->amount, 2) }} · {{ $payment->paid_at->format('d M Y') }}</span>
+                                        <span>KES {{ number_format($payment->amount, 2) }} · {{ $payment->paid_at->format('d M Y') }}@if ($payment->shop) · {{ $payment->shop->name }}@endif</span>
                                     </li>
                                 @endforeach
                             </ul>

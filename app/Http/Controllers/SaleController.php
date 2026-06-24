@@ -254,7 +254,7 @@ class SaleController extends Controller
 
         $sale->load([
             'shop', 'cashier', 'orderedBy', 'completedBy', 'customerAccount', 'customerInvoice',
-            'items.product.unit', 'payments.receiver', 'reverser',
+            'items.product.unit', 'payments.receiver', 'payments.shop', 'reverser',
             'returnRecords' => fn ($q) => $q->withCount('items')->latest(),
         ]);
 

@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreSupplierRequest;
 use App\Http\Requests\UpdateSupplierRequest;
 use App\Models\Supplier;
+use App\Services\SupplierOverviewService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SupplierController extends Controller
 {
-    public function __construct()
+    public function __construct(private SupplierOverviewService $overview)
     {
         $this->middleware('permission:suppliers.view')->only(['index', 'show']);
         $this->middleware('permission:suppliers.manage')->only(['create', 'store', 'edit', 'update', 'destroy']);
@@ -60,7 +61,10 @@ class SupplierController extends Controller
 
     public function show(Supplier $supplier): View
     {
-        return view('suppliers.show', compact('supplier'));
+        return view('suppliers.show', array_merge(
+            compact('supplier'),
+            $this->overview->context($supplier)
+        ));
     }
 
     public function edit(Supplier $supplier): View

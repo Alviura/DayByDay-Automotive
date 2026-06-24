@@ -7,18 +7,23 @@ use App\Models\Employee;
 use App\Models\PayrollLine;
 use App\Models\PayrollPeriod;
 use App\Models\PayrollRun;
+use App\Services\Payroll\PayrollExportService;
 use App\Services\Payroll\PayrollService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PayrollController extends Controller
 {
     public function __construct(
-        private readonly PayrollService $payrollService
+        private readonly PayrollService $payrollService,
+        private readonly PayrollExportService $exportService
     ) {
         $this->middleware('permission:payroll.view')->only(['index', 'showPeriod', 'payslip']);
+        $this->middleware('permission:payroll.export')->only('export');
         $this->middleware('permission:payroll.run')->only(['storePeriod', 'generate']);
         $this->middleware('permission:payroll.lock')->only(['lock', 'markPaid']);
     }
@@ -114,5 +119,53 @@ class PayrollController extends Controller
         $line->load(['employee', 'run.period']);
 
         return view('payroll.payslip', compact('line'));
+    }
+
+    public function export(PayrollRun $run, string $format): Response|StreamedResponse|RedirectResponse
+    {
+        if ($run->lines()->count() === 0) {
+            return back()->with('error', 'Nothing to export — generate payroll first.');
+        }
+
+        $filename = $this->exportService->filename($run, $format);
+
+        if ($format === 'register') {
+            $rows = $this->exportService->registerRows($run);
+            $totals = $this->exportService->registerTotals($run);
+
+            return response()->streamDownload(function () use ($rows, $totals) {
+                $handle = fopen('php://output', 'w');
+                fputcsv($handle, array_keys($rows->first()));
+                foreach ($rows as $row) {
+                    fputcsv($handle, array_values($row));
+                }
+                fputcsv($handle, array_values($totals));
+                fclose($handle);
+            }, "{$filename}.csv", ['Content-Type' => 'text/csv']);
+        }
+
+        if ($format === 'bank') {
+            $rows = $this->exportService->bankRows($run);
+
+            return response()->streamDownload(function () use ($rows) {
+                $handle = fopen('php://output', 'w');
+                fputcsv($handle, array_keys($rows->first()));
+                foreach ($rows as $row) {
+                    fputcsv($handle, array_values($row));
+                }
+                fclose($handle);
+            }, "{$filename}.csv", ['Content-Type' => 'text/csv']);
+        }
+
+        if ($format === 'print') {
+            $run->load(['period', 'lines.employee']);
+
+            return response()->view('payroll.export-print', [
+                'run' => $run,
+                'rows' => $this->exportService->registerRows($run),
+            ]);
+        }
+
+        return back()->with('error', 'Unsupported export format.');
     }
 }

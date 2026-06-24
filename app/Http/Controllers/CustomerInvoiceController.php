@@ -118,12 +118,14 @@ class CustomerInvoiceController extends Controller
             'sales.items.product',
             'sales.shop',
             'payments.receiver',
+            'payments.shop',
             'creator',
         ]);
 
         $paymentMethods = \App\Models\Payment::methods();
+        $shops = \App\Models\Shop::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
-        return view('customer-invoices.show', compact('customerInvoice', 'paymentMethods'));
+        return view('customer-invoices.show', compact('customerInvoice', 'paymentMethods', 'shops'));
     }
 
     public function recordPayment(RecordInvoicePaymentRequest $request, CustomerInvoice $customerInvoice): RedirectResponse

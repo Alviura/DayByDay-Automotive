@@ -25,18 +25,63 @@ class UserController extends Controller
 
     public function index(Request $request): View
     {
+        $statusFilter = (string) $request->get('status', '');
+
+        $stats = [
+            'total' => User::count(),
+            'active' => User::where('is_active', true)->count(),
+            'inactive' => User::where('is_active', false)->count(),
+            'recent_logins' => User::whereNotNull('last_login_at')
+                ->where('last_login_at', '>=', now()->subDays(30))
+                ->count(),
+        ];
+
+        $pipeline = [
+            ['key' => '', 'label' => 'All Users', 'icon' => 'fa-users', 'count' => $stats['total']],
+            ['key' => 'active', 'label' => 'Active', 'icon' => 'fa-circle-check', 'count' => $stats['active']],
+            ['key' => 'inactive', 'label' => 'Inactive', 'icon' => 'fa-ban', 'count' => $stats['inactive']],
+            [
+                'key' => 'unassigned',
+                'label' => 'No Location',
+                'icon' => 'fa-location-dot',
+                'count' => User::whereNull('shop_id')->whereNull('warehouse_id')->count(),
+            ],
+        ];
+
         $users = User::with(['roles', 'shop', 'warehouse'])
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
                 });
             })
-            ->orderBy('name')
+            ->when($statusFilter === 'active', fn ($q) => $q->where('is_active', true))
+            ->when($statusFilter === 'inactive', fn ($q) => $q->where('is_active', false))
+            ->when(
+                $statusFilter === 'unassigned',
+                fn ($q) => $q->whereNull('shop_id')->whereNull('warehouse_id')
+            )
+            ->when($request->role, fn ($q, $role) => $q->role($role))
+            ->when(
+                $request->sort === 'name',
+                fn ($q) => $q->orderBy('name'),
+                fn ($q) => $q->when(
+                    $request->sort === 'oldest',
+                    fn ($q) => $q->oldest(),
+                    fn ($q) => $q->latest()
+                )
+            )
             ->paginate(15)
             ->withQueryString();
 
-        return view('users.index', compact('users'));
+        return view('users.index', [
+            'users' => $users,
+            'stats' => $stats,
+            'pipeline' => $pipeline,
+            'statusFilter' => $statusFilter,
+            'roleOptions' => Role::orderBy('name')->pluck('name'),
+        ]);
     }
 
     public function create(): View
@@ -71,7 +116,11 @@ class UserController extends Controller
     {
         $user->load(['roles', 'shop', 'warehouse', 'logins' => fn ($q) => $q->latest('logged_in_at')->limit(20)]);
 
-        return view('users.show', compact('user'));
+        return view('users.show', [
+            'user' => $user,
+            'loginCount' => $user->logins()->count(),
+            'recentLoginCount' => $user->logins()->where('logged_in_at', '>=', now()->subDays(30))->count(),
+        ]);
     }
 
     public function edit(User $user): View

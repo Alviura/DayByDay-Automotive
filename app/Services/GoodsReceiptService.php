@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\QuotationSeries;
 use App\Models\User;
+use App\Notifications\GoodsArrivedNotification;
 use Illuminate\Support\Facades\DB;
 
 class GoodsReceiptService
@@ -16,6 +17,8 @@ class GoodsReceiptService
     public function __construct(
         private InventoryService $inventory,
         private ProcurementService $procurement,
+        private GlPostingService $gl,
+        private NotificationRecipientService $notificationRecipients,
     ) {}
 
     public function receive(
@@ -58,7 +61,15 @@ class GoodsReceiptService
 
             $this->syncPurchaseOrderReceiptState($purchaseOrder);
 
-            return $grn->load(['items.product', 'warehouse', 'purchaseOrder']);
+            $grn = $grn->load(['items.product', 'warehouse', 'purchaseOrder.supplier']);
+            $this->gl->postGrnReceived($grn, $user);
+
+            $this->notificationRecipients->notifyMany(
+                $this->notificationRecipients->procurementStakeholders(),
+                new GoodsArrivedNotification($grn)
+            );
+
+            return $grn;
         });
     }
 
@@ -141,7 +152,10 @@ class GoodsReceiptService
                 $this->syncPurchaseOrderReceiptState($purchaseOrder);
             }
 
-            return $grn->fresh(['items.product', 'warehouse', 'purchaseOrder', 'voidedBy']);
+            $grn = $grn->fresh(['items.product', 'warehouse', 'purchaseOrder', 'voidedBy']);
+            $this->gl->postGrnVoided($grn, $user);
+
+            return $grn;
         });
     }
 

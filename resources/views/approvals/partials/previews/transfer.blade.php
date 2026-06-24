@@ -8,8 +8,11 @@
     <div class="ap-preview-meta">
         <span class="ap-preview-meta-item"><i class="fas fa-route"></i> <strong>{{ $transfer->routeLabel() }}</strong></span>
         <span class="ap-preview-meta-item"><i class="fas fa-tag"></i> {{ $transfer->typeLabel() }}</span>
-        @if ($transfer->requester)
-            <span class="ap-preview-meta-item"><i class="fas fa-user"></i> {{ $transfer->requester->name }}</span>
+        @if ($transfer->creator)
+            <span class="ap-preview-meta-item"><i class="fas fa-user"></i> {{ $transfer->creator->name }}</span>
+        @endif
+        @if ($transfer->transferRequest)
+            <span class="ap-preview-meta-item"><i class="fas fa-inbox"></i> {{ $transfer->transferRequest->request_number }}</span>
         @endif
     </div>
     <div class="mi-table-wrap">
@@ -17,10 +20,7 @@
             <thead>
                 <tr>
                     <th>Product</th>
-                    <th>Requested</th>
-                    @if ($transfer->status === 'approved' || $transfer->items->contains(fn ($i) => $i->approved_quantity))
-                        <th>Approved</th>
-                    @endif
+                    <th>Quantity</th>
                 </tr>
             </thead>
             <tbody>
@@ -30,10 +30,7 @@
                             <p class="mi-pkg-name">{{ $item->product->part_number }}</p>
                             <p class="text-xs text-gray-500">{{ $item->product->name }}</p>
                         </td>
-                        <td class="font-medium">{{ number_format((float) $item->requested_quantity, 0) }} {{ $item->product->unit?->abbreviation ?? '' }}</td>
-                        @if ($transfer->status === 'approved' || $transfer->items->contains(fn ($i) => $i->approved_quantity))
-                            <td>{{ $item->approved_quantity !== null ? number_format((float) $item->approved_quantity, 0) : '—' }}</td>
-                        @endif
+                        <td class="font-medium">{{ number_format((float) $item->quantity, 0) }} {{ $item->product->unit?->abbreviation ?? '' }}</td>
                     </tr>
                 @endforeach
             </tbody>

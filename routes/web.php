@@ -11,6 +11,7 @@ use App\Http\Controllers\CustomerReturnController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GoodsReceiptController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\QuotationSeriesController;
 use App\Http\Controllers\ProductCatalogController;
 use App\Http\Controllers\ProductController;
@@ -25,9 +26,8 @@ use App\Http\Controllers\ShopController;
 use App\Http\Controllers\StockAdjustmentController;
 use App\Http\Controllers\SupplierReturnController;
 use App\Http\Controllers\SupplierController;
-use App\Http\Controllers\TransferController;
-use App\Models\StockTransfer;
-use App\Models\TransferRequest;
+use App\Http\Controllers\StockTransferController;
+use App\Http\Controllers\TransferRequestController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleCatalogController;
@@ -53,6 +53,10 @@ Route::get('/', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -127,23 +131,65 @@ Route::middleware('auth')->group(function () {
     Route::get('goods-receipts/{goods_receipt_note}', [GoodsReceiptController::class, 'show'])->name('goods-receipts.show');
     Route::post('goods-receipts/{goods_receipt_note}/void', [GoodsReceiptController::class, 'void'])->name('goods-receipts.void');
 
-    // Distribution & transfers (M14)
-    Route::get('transfers/availability', [TransferController::class, 'availability'])->name('transfers.availability');
-    Route::resource('transfers', TransferController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
-    Route::post('transfers/{transfer}/submit', [TransferController::class, 'submit'])->name('transfers.submit');
-    Route::post('transfers/{transfer}/dispatch', [TransferController::class, 'dispatch'])->name('transfers.dispatch');
-    Route::get('transfers/{transfer}/receive', [TransferController::class, 'receiveForm'])->name('transfers.receive');
-    Route::post('transfers/{transfer}/receive', [TransferController::class, 'receive'])->name('transfers.receive.store');
-    Route::redirect('transfer-requests', '/transfers');
-    Route::redirect('stock-transfers', '/transfers');
-    Route::get('transfer-requests/{transferRequest}', fn (TransferRequest $transferRequest) => redirect()->route('transfers.show', $transferRequest));
-    Route::get('stock-transfers/{stockTransfer}', function (StockTransfer $stockTransfer) {
-        if ($stockTransfer->transferRequest) {
-            return redirect()->route('transfers.show', $stockTransfer->transferRequest);
-        }
+    Route::get('supplier-payments', [\App\Http\Controllers\SupplierPaymentController::class, 'index'])->name('supplier-payments.index');
+    Route::get('supplier-payments/create', [\App\Http\Controllers\SupplierPaymentController::class, 'create'])->name('supplier-payments.create');
+    Route::post('supplier-payments', [\App\Http\Controllers\SupplierPaymentController::class, 'store'])->name('supplier-payments.store');
+    Route::get('supplier-payments/{supplier_payment}', [\App\Http\Controllers\SupplierPaymentController::class, 'show'])->name('supplier-payments.show');
+    Route::post('supplier-payments/{supplier_payment}/void', [\App\Http\Controllers\SupplierPaymentController::class, 'void'])->name('supplier-payments.void');
 
-        return redirect()->route('transfers.index');
-    });
+    // Finance / General Ledger (F1)
+    Route::get('chart-of-accounts', [\App\Http\Controllers\ChartOfAccountController::class, 'index'])->name('chart-of-accounts.index');
+    Route::get('chart-of-accounts/create', [\App\Http\Controllers\ChartOfAccountController::class, 'create'])->name('chart-of-accounts.create');
+    Route::post('chart-of-accounts', [\App\Http\Controllers\ChartOfAccountController::class, 'store'])->name('chart-of-accounts.store');
+    Route::get('chart-of-accounts/{chart_of_account}', [\App\Http\Controllers\ChartOfAccountController::class, 'show'])->name('chart-of-accounts.show');
+    Route::get('chart-of-accounts/{chart_of_account}/edit', [\App\Http\Controllers\ChartOfAccountController::class, 'edit'])->name('chart-of-accounts.edit');
+    Route::put('chart-of-accounts/{chart_of_account}', [\App\Http\Controllers\ChartOfAccountController::class, 'update'])->name('chart-of-accounts.update');
+
+    Route::get('journal-entries', [\App\Http\Controllers\JournalEntryController::class, 'index'])->name('journal-entries.index');
+    Route::get('journal-entries/create', [\App\Http\Controllers\JournalEntryController::class, 'create'])->name('journal-entries.create');
+    Route::post('journal-entries', [\App\Http\Controllers\JournalEntryController::class, 'store'])->name('journal-entries.store');
+    Route::get('journal-entries/{journal_entry}', [\App\Http\Controllers\JournalEntryController::class, 'show'])->name('journal-entries.show');
+    Route::post('journal-entries/{journal_entry}/submit', [\App\Http\Controllers\JournalEntryController::class, 'submit'])->name('journal-entries.submit');
+    Route::post('journal-entries/{journal_entry}/void', [\App\Http\Controllers\JournalEntryController::class, 'void'])->name('journal-entries.void');
+
+    Route::get('trial-balance', [\App\Http\Controllers\TrialBalanceController::class, 'index'])->name('trial-balance.index');
+
+    Route::get('financial-statements', [\App\Http\Controllers\FinancialStatementController::class, 'index'])->name('financial-statements.index');
+
+    Route::get('tax-remittances', [\App\Http\Controllers\TaxRemittanceController::class, 'index'])->name('tax-remittances.index');
+    Route::get('tax-remittances/{tax_remittance}', [\App\Http\Controllers\TaxRemittanceController::class, 'show'])->name('tax-remittances.show');
+    Route::post('tax-remittances/{tax_remittance}/file', [\App\Http\Controllers\TaxRemittanceController::class, 'file'])->name('tax-remittances.file');
+    Route::post('tax-remittances/{tax_remittance}/pay', [\App\Http\Controllers\TaxRemittanceController::class, 'pay'])->name('tax-remittances.pay');
+
+    Route::get('bank-reconciliations', [\App\Http\Controllers\BankReconciliationController::class, 'index'])->name('bank-reconciliations.index');
+    Route::get('bank-reconciliations/create', [\App\Http\Controllers\BankReconciliationController::class, 'create'])->name('bank-reconciliations.create');
+    Route::post('bank-reconciliations', [\App\Http\Controllers\BankReconciliationController::class, 'store'])->name('bank-reconciliations.store');
+    Route::get('bank-reconciliations/{bank_reconciliation}', [\App\Http\Controllers\BankReconciliationController::class, 'show'])->name('bank-reconciliations.show');
+    Route::post('bank-reconciliations/{bank_reconciliation}/complete', [\App\Http\Controllers\BankReconciliationController::class, 'complete'])->name('bank-reconciliations.complete');
+
+    Route::get('financial-periods', [\App\Http\Controllers\FinancialPeriodController::class, 'index'])->name('financial-periods.index');
+    Route::post('financial-periods/close', [\App\Http\Controllers\FinancialPeriodController::class, 'close'])->name('financial-periods.close');
+    Route::post('financial-periods/reopen', [\App\Http\Controllers\FinancialPeriodController::class, 'reopen'])->name('financial-periods.reopen');
+
+    // Transfer requests (shop managers request stock)
+    Route::get('transfer-requests/availability', [TransferRequestController::class, 'availability'])->name('transfer-requests.availability');
+    Route::resource('transfer-requests', TransferRequestController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
+    Route::post('transfer-requests/{transfer_request}/submit', [TransferRequestController::class, 'submit'])->name('transfer-requests.submit');
+    Route::post('transfer-requests/{transfer_request}/accept', [TransferRequestController::class, 'accept'])->name('transfer-requests.accept');
+    Route::post('transfer-requests/{transfer_request}/reject', [TransferRequestController::class, 'reject'])->name('transfer-requests.reject');
+    Route::post('transfer-requests/{transfer_request}/create-stock-transfer', [TransferRequestController::class, 'createStockTransfer'])->name('transfer-requests.create-stock-transfer');
+
+    // Stock transfers (operational moves — admin approval)
+    Route::get('stock-transfers/availability', [StockTransferController::class, 'availability'])->name('stock-transfers.availability');
+    Route::resource('stock-transfers', StockTransferController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
+    Route::post('stock-transfers/{stock_transfer}/submit', [StockTransferController::class, 'submit'])->name('stock-transfers.submit');
+    Route::post('stock-transfers/{stock_transfer}/dispatch', [StockTransferController::class, 'dispatch'])->name('stock-transfers.dispatch');
+    Route::get('stock-transfers/{stock_transfer}/receive', [StockTransferController::class, 'receiveForm'])->name('stock-transfers.receive');
+    Route::post('stock-transfers/{stock_transfer}/receive', [StockTransferController::class, 'receive'])->name('stock-transfers.receive.store');
+
+    // Legacy URLs
+    Route::redirect('transfers', '/stock-transfers');
+    Route::redirect('transfers/create', '/stock-transfers/create');
 
     // Sales / POS (M15)
     Route::get('sales/pos', [SaleController::class, 'pos'])->name('sales.pos');
@@ -208,6 +254,7 @@ Route::middleware('auth')->group(function () {
     Route::post('payroll/periods/{period}/generate', [PayrollController::class, 'generate'])->name('payroll.periods.generate');
     Route::post('payroll/runs/{run}/lock', [PayrollController::class, 'lock'])->name('payroll.runs.lock');
     Route::post('payroll/runs/{run}/mark-paid', [PayrollController::class, 'markPaid'])->name('payroll.runs.mark-paid');
+    Route::get('payroll/runs/{run}/export/{format}', [PayrollController::class, 'export'])->name('payroll.runs.export');
     Route::get('payroll/payslips/{line}', [PayrollController::class, 'payslip'])->name('payroll.payslip');
 });
 

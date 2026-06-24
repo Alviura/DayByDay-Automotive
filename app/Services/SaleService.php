@@ -13,7 +13,10 @@ use Illuminate\Support\Facades\DB;
 
 class SaleService
 {
-    public function __construct(private InventoryService $inventory) {}
+    public function __construct(
+        private InventoryService $inventory,
+        private GlPostingService $gl,
+    ) {}
 
     public function hold(
         Shop $shop,
@@ -150,10 +153,14 @@ class SaleService
                 'amount_paid' => 0,
                 'change_due' => 0,
                 'sold_at' => now(),
+                'ar_recognized_at' => now(),
                 'completed_by' => $user->id,
             ]);
 
-            return $sale->fresh(['items.product.unit', 'shop', 'customerAccount', 'cashier']);
+            $sale = $sale->fresh(['items.product.unit', 'shop', 'customerAccount', 'cashier']);
+            $this->gl->postCreditSale($sale, $user);
+
+            return $sale;
         });
     }
 
@@ -205,7 +212,9 @@ class SaleService
 
                 Payment::create([
                     'sale_id' => $sale->id,
+                    'shop_id' => $sale->shop_id,
                     'method' => $payment['method'],
+                    'direction' => 'receipt',
                     'amount' => $payment['amount'],
                     'reference' => $payment['reference'] ?? null,
                     'paid_at' => now(),
@@ -222,18 +231,29 @@ class SaleService
                 'completed_by' => $user->id,
             ]);
 
-            return $sale->fresh(['items.product.unit', 'payments', 'shop', 'cashier']);
+            $sale = $sale->fresh(['items.product.unit', 'payments', 'shop', 'cashier']);
+            $this->gl->postRetailSale($sale, $user);
+
+            return $sale;
         });
     }
 
     public function reverse(Sale $sale, ?User $user = null, ?string $reason = null): Sale
     {
         if (! $sale->canReverse()) {
-            throw new \InvalidArgumentException('Only completed sales can be reversed.');
+            if ($sale->status !== 'completed') {
+                throw new \InvalidArgumentException('Only completed sales can be reversed.');
+            }
+
+            if ($sale->customer_invoice_id) {
+                throw new \InvalidArgumentException('Cannot reverse a sale that is already on a fleet invoice.');
+            }
+
+            throw new \InvalidArgumentException('This sale cannot be reversed because it has linked returns.');
         }
 
         $user ??= auth()->user();
-        $sale->load(['items.product', 'shop']);
+        $sale->load(['items.product', 'shop', 'payments']);
 
         return DB::transaction(function () use ($sale, $user, $reason) {
             foreach ($sale->items as $item) {
@@ -253,15 +273,52 @@ class SaleService
                 );
             }
 
+            $this->reversePayments($sale, $user, $reason);
+
+            $paymentStatus = $sale->isRetail() && $sale->payments->where('direction', 'receipt')->isNotEmpty()
+                ? 'refunded'
+                : $sale->payment_status;
+
             $sale->update([
                 'status' => 'reversed',
+                'payment_status' => $paymentStatus,
                 'reversed_by' => $user->id,
                 'reversed_at' => now(),
                 'notes' => trim(($sale->notes ?? '')."\nReversed: ".($reason ?? 'No reason given')),
             ]);
 
-            return $sale->fresh(['items.product', 'payments', 'shop', 'reverser']);
+            $sale = $sale->fresh(['items.product', 'payments', 'shop', 'reverser']);
+            $this->gl->postSaleReversal($sale, $user);
+
+            return $sale;
         });
+    }
+
+    private function reversePayments(Sale $sale, User $user, ?string $reason): void
+    {
+        $alreadyRefunded = $sale->payments
+            ->where('direction', 'refund')
+            ->pluck('reverses_payment_id')
+            ->filter()
+            ->all();
+
+        $receipts = $sale->payments
+            ->where('direction', 'receipt')
+            ->reject(fn (Payment $payment) => in_array($payment->id, $alreadyRefunded, true));
+
+        foreach ($receipts as $payment) {
+            Payment::create([
+                'sale_id' => $sale->id,
+                'shop_id' => $sale->shop_id,
+                'method' => $payment->method,
+                'direction' => 'refund',
+                'reverses_payment_id' => $payment->id,
+                'amount' => $payment->amount,
+                'reference' => $payment->reference,
+                'paid_at' => now(),
+                'received_by' => $user->id,
+            ]);
+        }
     }
 
     public function abandonHeld(Sale $sale): void

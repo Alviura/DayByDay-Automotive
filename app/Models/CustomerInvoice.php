@@ -19,6 +19,7 @@ class CustomerInvoice extends Model
         'amount_paid',
         'status',
         'issued_at',
+        'ar_consolidated_at',
         'due_at',
         'notes',
         'created_by',
@@ -32,6 +33,7 @@ class CustomerInvoice extends Model
         'total' => 'decimal:2',
         'amount_paid' => 'decimal:2',
         'issued_at' => 'datetime',
+        'ar_consolidated_at' => 'datetime',
         'due_at' => 'date',
     ];
 

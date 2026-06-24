@@ -103,7 +103,11 @@ class StockAdjustment extends Model implements ApprovableDocument
 
     public function resolveApprovalApprover(): ?User
     {
-        return app(ApprovalService::class)->resolveDefaultApprover();
+        return User::permission('inventory.adjust.approve')
+            ->active()
+            ->orderBy('id')
+            ->first()
+            ?? app(ApprovalService::class)->resolveDefaultApprover();
     }
 
     public function onApprovalApproved(Approval $approval): void

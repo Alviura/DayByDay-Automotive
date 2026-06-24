@@ -45,8 +45,8 @@
             </div>
             <div class="mi-kpi mi-kpi-orange">
                 <div>
-                    <p class="mi-kpi-label">Current Approver</p>
-                    <p class="mi-kpi-value text-status">{{ $approval->currentApprover?->name ?? '—' }}</p>
+                    <p class="mi-kpi-label">{{ $approval->actorLabel() }}</p>
+                    <p class="mi-kpi-value text-status">{{ $approval->actorDisplayName() ?? '—' }}</p>
                 </div>
                 <div class="mi-kpi-icon"><i class="fas fa-user-check"></i></div>
             </div>
@@ -111,12 +111,12 @@
                                 </dd>
                             </div>
                         @endif
-                        @if ($approval->approvable instanceof \App\Models\TransferRequest)
+                        @if ($approval->approvable instanceof \App\Models\StockTransfer)
                             <div class="mi-detail-item">
                                 <dt class="mi-detail-label"><i class="fas fa-right-left"></i> Source Document</dt>
                                 <dd class="mi-detail-value">
-                                    <a href="{{ route('transfers.show', $approval->approvable) }}" class="text-orange-600 hover:text-orange-700">
-                                        View transfer {{ $approval->approvable->request_number }}
+                                    <a href="{{ route('stock-transfers.show', $approval->approvable) }}" class="text-orange-600 hover:text-orange-700">
+                                        View transfer {{ $approval->approvable->transfer_number }}
                                     </a>
                                 </dd>
                             </div>

@@ -334,20 +334,28 @@
                         <p class="sl-detail-title"><i class="fas fa-wallet"></i> Payments</p>
                         @foreach ($sale->payments as $payment)
                             @php [$icon, $iconClass] = $paymentIcon($payment->method); @endphp
-                            <div class="sl-pay-pill">
+                            <div class="sl-pay-pill {{ $payment->isRefund() ? 'opacity-80' : '' }}">
                                 <div>
                                     <div class="sl-pay-method">
                                         <span class="sl-pay-icon {{ $iconClass }}"><i class="fas {{ $icon }}"></i></span>
                                         {{ $payment->methodLabel() }}
+                                        @if ($payment->isRefund())
+                                            <span class="sl-badge sl-badge-rose text-[0.6rem] ml-1">Refund</span>
+                                        @endif
                                     </div>
                                     @if ($payment->reference)
                                         <p class="sl-pay-ref">Ref: {{ $payment->reference }}</p>
+                                    @endif
+                                    @if ($payment->shop)
+                                        <p class="sl-pay-ref">{{ $payment->shop->name }}</p>
                                     @endif
                                     @if ($payment->paid_at)
                                         <p class="sl-pay-ref">{{ $payment->paid_at->format('d M Y H:i') }}</p>
                                     @endif
                                 </div>
-                                <span class="sl-pay-amount">{{ number_format($payment->amount, 2) }}</span>
+                                <span class="sl-pay-amount {{ $payment->isRefund() ? 'text-rose-600' : '' }}">
+                                    {{ $payment->isRefund() ? '−' : '' }}{{ number_format($payment->amount, 2) }}
+                                </span>
                             </div>
                         @endforeach
                         @if ($sale->change_due > 0)

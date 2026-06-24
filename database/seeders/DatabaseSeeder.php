@@ -14,24 +14,10 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RoleSeeder::class,
-            AdminUserSeeder::class,
-            WarehouseSeeder::class,
-            ShopSeeder::class,
-            SupplierSeeder::class,
-            VehicleMakeSeeder::class,
-            CategorySeeder::class,
-            ProductNameSeeder::class,
             UnitSeeder::class,
-            ProductSeeder::class,
-            ApprovalSeeder::class,
-            InventorySeeder::class,
-            ProcurementSeeder::class,
-            TransferSeeder::class,
-            SaleSeeder::class,
-            CustomerAccountSeeder::class,
-            ReturnSeeder::class,
-            AuditLogSeeder::class,
-            EmployeeSeeder::class,
+            ChartOfAccountSeeder::class,
+            AdminUserSeeder::class,
+            WarehouseManagerUserSeeder::class,
         ]);
     }
 }

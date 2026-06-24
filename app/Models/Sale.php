@@ -34,6 +34,8 @@ class Sale extends Model
         'payment_status',
         'sold_at',
         'submitted_at',
+        'ar_recognized_at',
+        'ar_invoiced_at',
         'reversed_by',
         'reversed_at',
         'notes',
@@ -48,6 +50,8 @@ class Sale extends Model
         'change_due' => 'decimal:2',
         'sold_at' => 'datetime',
         'submitted_at' => 'datetime',
+        'ar_recognized_at' => 'datetime',
+        'ar_invoiced_at' => 'datetime',
         'reversed_at' => 'datetime',
     ];
 
@@ -150,6 +154,7 @@ class Sale extends Model
             'unpaid' => 'Unpaid',
             'partial' => 'Partial',
             'paid' => 'Paid',
+            'refunded' => 'Refunded',
             default => ucfirst($this->payment_status),
         };
     }
@@ -161,7 +166,15 @@ class Sale extends Model
 
     public function canReverse(): bool
     {
-        return $this->status === 'completed';
+        if ($this->status !== 'completed') {
+            return false;
+        }
+
+        if ($this->customer_invoice_id) {
+            return false;
+        }
+
+        return ! $this->returnRecords()->whereNotIn('status', ['rejected'])->exists();
     }
 
     public function isHeld(): bool

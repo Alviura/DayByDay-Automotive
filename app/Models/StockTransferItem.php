@@ -10,12 +10,14 @@ class StockTransferItem extends Model
     protected $fillable = [
         'stock_transfer_id',
         'product_id',
+        'quantity',
         'dispatched_quantity',
         'received_quantity',
         'damaged_quantity',
     ];
 
     protected $casts = [
+        'quantity' => 'decimal:2',
         'dispatched_quantity' => 'decimal:2',
         'received_quantity' => 'decimal:2',
         'damaged_quantity' => 'decimal:2',
@@ -29,6 +31,11 @@ class StockTransferItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function transferQuantity(): float
+    {
+        return (float) ($this->quantity > 0 ? $this->quantity : $this->dispatched_quantity);
     }
 
     public function goodQuantity(): float

@@ -120,9 +120,7 @@ class StockLedger extends Model
                     ? route('supplier-returns.show', $return)
                     : route('customer-returns.show', $return))
                 : null),
-            StockTransfer::class => ($transfer = StockTransfer::find($this->reference_id))?->transfer_request_id
-                ? route('transfers.show', $transfer->transfer_request_id)
-                : null,
+            StockTransfer::class => route('stock-transfers.show', $this->reference_id),
             Sale::class => route('sales.show', $this->reference_id),
             default => null,
         };

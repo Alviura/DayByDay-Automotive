@@ -4,7 +4,7 @@
 
 @if ($document)
     @switch(true)
-        @case($document instanceof \App\Models\TransferRequest)
+        @case($document instanceof \App\Models\StockTransfer)
             @include('approvals.partials.previews.transfer', ['transfer' => $document])
             @break
         @case($document instanceof \App\Models\StockAdjustment)

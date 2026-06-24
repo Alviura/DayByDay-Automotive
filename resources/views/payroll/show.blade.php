@@ -72,9 +72,22 @@
             </div>
 
             <div class="mi-card overflow-hidden">
-                <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+                <div class="p-4 border-b border-gray-100 flex flex-wrap justify-between items-center gap-3">
                     <span class="font-semibold text-gray-800">Run {{ $run->run_number }}</span>
-                    <span class="text-sm text-gray-500 capitalize">{{ $run->status }}</span>
+                    <div class="flex flex-wrap items-center gap-2">
+                        @can('payroll.export')
+                            <a href="{{ route('payroll.runs.export', [$run, 'register']) }}" class="mi-btn-ghost text-xs">
+                                <i class="fas fa-file-csv"></i> Register CSV
+                            </a>
+                            <a href="{{ route('payroll.runs.export', [$run, 'bank']) }}" class="mi-btn-ghost text-xs">
+                                <i class="fas fa-building-columns"></i> Bank CSV
+                            </a>
+                            <a href="{{ route('payroll.runs.export', [$run, 'print']) }}" target="_blank" class="mi-btn-ghost text-xs">
+                                <i class="fas fa-print"></i> Print Register
+                            </a>
+                        @endcan
+                        <span class="text-sm text-gray-500 capitalize">{{ $run->status }}</span>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="mi-table text-sm">

@@ -15,7 +15,7 @@
                     <p class="mt-0.5 text-sm text-gray-500">Request, approve, dispatch, and receive stock between warehouse and shops.</p>
                 </div>
             </div>
-            @can('transfers.request')
+            @can('transfers.create')
                 @if (! empty($allowedCreateTypes))
                     <a href="{{ route('transfers.create') }}" class="mi-btn-orange">
                         <i class="fas fa-plus text-xs"></i> New Transfer
@@ -179,7 +179,7 @@
                                         <td colspan="8" class="!py-14 text-center">
                                             <div class="tr-empty-icon"><i class="fas fa-right-left"></i></div>
                                             <p class="text-gray-500 font-medium">No transfers match your filters.</p>
-                                            @can('transfers.request')
+                                            @can('transfers.create')
                                                 @if (! empty($allowedCreateTypes))
                                                     <a href="{{ route('transfers.create') }}" class="mi-btn-orange mt-4 inline-flex">
                                                         <i class="fas fa-plus text-xs"></i> New Transfer

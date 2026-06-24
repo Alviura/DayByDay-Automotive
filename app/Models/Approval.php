@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ApprovalActionType;
 use App\Enums\ApprovalStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -96,6 +97,58 @@ class Approval extends Model
         ], true);
     }
 
+    /**
+     * User who approved, rejected, or returned this request.
+     */
+    public function actedBy(): ?User
+    {
+        $actions = $this->relationLoaded('actions')
+            ? $this->actions
+            : $this->actions()->with('actor')->get();
+
+        $decisive = $actions
+            ->whereIn('action', [
+                ApprovalActionType::Approved,
+                ApprovalActionType::Rejected,
+                ApprovalActionType::Returned,
+            ])
+            ->sortByDesc(fn (ApprovalAction $action) => $action->created_at)
+            ->first();
+
+        return $decisive?->actor;
+    }
+
+    /**
+     * Name shown in the Approver column — blank while pending, actor once decided.
+     */
+    public function resolvedApproverName(): ?string
+    {
+        if ($this->status === ApprovalStatus::Pending) {
+            return null;
+        }
+
+        return $this->actedBy()?->name;
+    }
+
+    public function actorLabel(): string
+    {
+        return match ($this->status) {
+            ApprovalStatus::Approved => 'Approved By',
+            ApprovalStatus::Rejected => 'Rejected By',
+            ApprovalStatus::Returned => 'Returned By',
+            default => 'Assigned To',
+        };
+    }
+
+    public function actorDisplayName(): ?string
+    {
+        if ($this->status === ApprovalStatus::Pending) {
+            return $this->currentApprover?->name;
+        }
+
+        return $this->actedBy()?->name;
+    }
+
     public function moduleKey(): ?string
     {
         $approvable = $this->approvable;
@@ -160,7 +213,19 @@ class Approval extends Model
             return $approvable->approvalReference();
         }
 
-        return '#'.$this->id;
+        if ($approvable instanceof TransferRequest) {
+            return $approvable->request_number;
+        }
+
+        $columns = config('approvals.search_columns.'.$this->approvable_type, []);
+        if ($approvable && ! empty($columns[0])) {
+            $value = $approvable->{$columns[0]} ?? null;
+            if ($value) {
+                return (string) $value;
+            }
+        }
+
+        return 'Approval #'.$this->id;
     }
 
     public function documentSummary(): string

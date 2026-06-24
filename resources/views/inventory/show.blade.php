@@ -85,9 +85,23 @@
                                 @forelse ($balances as $balance)
                                     @php
                                         $isWh = $balance->location instanceof \App\Models\Warehouse;
-                                        $transferParams = $isWh
-                                            ? ['type' => 'warehouse_to_shop', 'source_id' => $balance->location_id, 'product_id' => $product->id]
-                                            : ['type' => 'inter_shop', 'source_id' => $balance->location_id, 'product_id' => $product->id];
+                                        $requestAccess = app(\App\Services\TransferRequestAccessService::class);
+                                        $stockAccess = app(\App\Services\StockTransferAccessService::class);
+                                        $scopedShopId = $requestAccess->scopedShopId(auth()->user());
+                                        $transferParams = null;
+                                        $transferRoute = null;
+
+                                        if (! $isWh && $scopedShopId && (int) $balance->location_id === $scopedShopId) {
+                                            $transferParams = ['product_id' => $product->id];
+                                            $transferRoute = 'transfer-requests.create';
+                                        } elseif ($isWh && $stockAccess->canCreateType(auth()->user(), 'warehouse_to_shop')) {
+                                            $transferParams = [
+                                                'type' => 'warehouse_to_shop',
+                                                'source_id' => $balance->location_id,
+                                                'product_id' => $product->id,
+                                            ];
+                                            $transferRoute = 'stock-transfers.create';
+                                        }
                                     @endphp
                                     <tr>
                                         <td>
@@ -102,11 +116,9 @@
                                         <td>{{ number_format($balance->average_cost, 2) }}</td>
                                         <td class="font-semibold">
                                             {{ number_format($balance->stockValue(), 2) }}
-                                            @can('transfers.request')
-                                                @if ($balance->quantity_available > 0)
-                                                    <a href="{{ route('transfers.create', $transferParams) }}" class="block text-xs text-orange-600 font-semibold mt-0.5 hover:underline">Transfer →</a>
+                                            @if ($transferParams && $transferRoute && $balance->quantity_available > 0)
+                                                    <a href="{{ route($transferRoute, $transferParams) }}" class="block text-xs text-orange-600 font-semibold mt-0.5 hover:underline">Transfer →</a>
                                                 @endif
-                                            @endcan
                                         </td>
                                     </tr>
                                 @empty

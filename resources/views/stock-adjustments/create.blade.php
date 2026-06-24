@@ -14,7 +14,7 @@
         method="POST"
         submit-label="Save Draft"
     >
-        <x-stock-adjustment.form-fields :warehouses="$warehouses" :shops="$shops" :products="$products" />
+        <x-stock-adjustment.form-fields :warehouses="$warehouses" :shops="$shops" :products="$products" :locked-warehouse="$lockedWarehouse ?? null" />
 
         <x-slot:guide>
             <x-stock-adjustment.form-guide />

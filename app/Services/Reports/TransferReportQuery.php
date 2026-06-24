@@ -34,10 +34,10 @@ class TransferReportQuery
 
         $summary = [
             'requests_in_period' => (clone $requestQuery)->count(),
-            'pending' => TransferRequest::where('status', 'pending')->count(),
-            'in_transit' => TransferRequest::where('status', 'dispatched')->count(),
+            'pending' => TransferRequest::where('status', 'submitted')->count(),
+            'in_transit' => StockTransfer::whereIn('status', ['dispatched', 'in_transit'])->count(),
             'dispatched_in_period' => (clone $transferQuery)->count(),
-            'completed_in_period' => (clone $requestQuery)->where('status', 'completed')->count(),
+            'completed_in_period' => (clone $requestQuery)->where('status', 'fulfilled')->count(),
         ];
 
         $recentRequests = (clone $requestQuery)

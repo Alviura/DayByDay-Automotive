@@ -22,11 +22,11 @@
                         <i class="fas fa-cart-shopping text-xs"></i> Order Entry
                     </a>
                 @endcan
-                @can('sales.create')
+            @can('sales.create')
                     <a href="{{ route('sales.desk') }}" class="mi-btn-orange">
                         <i class="fas fa-cash-register text-xs"></i> Cash Desk
                     </a>
-                @endcan
+            @endcan
             </div>
         </div>
 

@@ -7,6 +7,8 @@ use App\Models\EmployeeSalary;
 use App\Models\PayrollLine;
 use App\Models\PayrollPeriod;
 use App\Models\PayrollRun;
+use App\Models\User;
+use App\Services\GlPostingService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -14,7 +16,8 @@ use RuntimeException;
 class PayrollService
 {
     public function __construct(
-        private readonly KenyaStatutoryCalculator $calculator
+        private readonly KenyaStatutoryCalculator $calculator,
+        private readonly GlPostingService $gl,
     ) {}
 
     public function createPeriod(int $year, int $month): PayrollPeriod
@@ -106,7 +109,10 @@ class PayrollService
 
         $run->period->update(['status' => 'locked']);
 
-        return $run->fresh(['lines.employee', 'processor', 'locker']);
+        $run = $run->fresh(['lines.employee', 'processor', 'locker']);
+        $this->gl->postPayrollLocked($run, User::find($lockedBy));
+
+        return $run;
     }
 
     public function markPaid(PayrollRun $run): PayrollRun
@@ -122,7 +128,10 @@ class PayrollService
 
         $run->period->update(['status' => 'paid']);
 
-        return $run->fresh();
+        $run = $run->fresh(['lines']);
+        $this->gl->postPayrollPaid($run);
+
+        return $run;
     }
 
     private function buildLine(PayrollRun $run, Employee $employee, EmployeeSalary $salary): PayrollLine

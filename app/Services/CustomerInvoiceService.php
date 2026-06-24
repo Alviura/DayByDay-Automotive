@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 
 class CustomerInvoiceService
 {
+    public function __construct(private GlPostingService $gl) {}
+
     public function generate(
         CustomerAccount $account,
         Carbon $periodStart,
@@ -50,6 +52,7 @@ class CustomerInvoiceService
                 'amount_paid' => 0,
                 'status' => 'sent',
                 'issued_at' => now(),
+                'ar_consolidated_at' => now(),
                 'due_at' => $periodEnd->copy()->addDays(30)->toDateString(),
                 'notes' => $notes,
                 'created_by' => $user?->id,
@@ -57,6 +60,7 @@ class CustomerInvoiceService
 
             Sale::whereIn('id', $sales->pluck('id'))->update([
                 'customer_invoice_id' => $invoice->id,
+                'ar_invoiced_at' => now(),
             ]);
 
             return $invoice->fresh(['account', 'sales.items.product', 'creator']);
@@ -78,19 +82,27 @@ class CustomerInvoiceService
         }
 
         return DB::transaction(function () use ($invoice, $payments, $user, $amountPaid) {
+            $defaultShopId = $user?->shop_id;
+            $createdPayments = [];
+
             foreach ($payments as $payment) {
                 if ((float) $payment['amount'] <= 0) {
                     continue;
                 }
 
-                CustomerInvoicePayment::create([
+                $createdPayments[] = CustomerInvoicePayment::create([
                     'customer_invoice_id' => $invoice->id,
+                    'shop_id' => $payment['shop_id'] ?? $defaultShopId,
                     'method' => $payment['method'],
                     'amount' => $payment['amount'],
                     'reference' => $payment['reference'] ?? null,
                     'paid_at' => now(),
                     'received_by' => $user?->id,
                 ]);
+            }
+
+            foreach ($createdPayments as $paymentRecord) {
+                $this->gl->postInvoicePayment($paymentRecord, $user);
             }
 
             $newAmountPaid = (float) $invoice->amount_paid + $amountPaid;

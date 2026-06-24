@@ -1,9 +1,9 @@
-@props(['warehouses' => collect(), 'shops' => collect(), 'products' => collect()])
+@props(['warehouses' => collect(), 'shops' => collect(), 'products' => collect(), 'lockedWarehouse' => null])
 
 <div
     x-data="{
-        locationType: @js(old('location_type', 'warehouse')),
-        locationId: @js(old('location_id', $warehouses->first()?->id ?? '')),
+        locationType: @js(old('location_type', $lockedWarehouse ? 'warehouse' : 'warehouse')),
+        locationId: @js(old('location_id', $lockedWarehouse?->id ?? $warehouses->first()?->id ?? '')),
         warehouses: @js($warehouses->map(fn ($w) => ['id' => $w->id, 'label' => $w->name.' ('.$w->code.')'])->values()),
         shops: @js($shops->map(fn ($s) => ['id' => $s->id, 'label' => $s->name.' ('.$s->code.')'])->values()),
         rows: @js(old('items', [['product_id' => '', 'counted_quantity' => '', 'system_quantity' => '', 'loading' => false]])),
@@ -81,6 +81,15 @@
         </div>
 
         <div class="mi-form-grid">
+            @if ($lockedWarehouse)
+                <input type="hidden" name="location_type" value="warehouse">
+                <input type="hidden" name="location_id" value="{{ $lockedWarehouse->id }}">
+                <div class="col-span-full">
+                    <label class="mi-field-label"><i class="fas fa-warehouse"></i> Warehouse</label>
+                    <div class="mi-input block w-full bg-gray-50 text-gray-700 cursor-not-allowed">{{ $lockedWarehouse->name }} ({{ $lockedWarehouse->code }})</div>
+                    <p class="mi-field-hint mt-1">Adjustments apply to your assigned warehouse.</p>
+                </div>
+            @else
             <div>
                 <label class="mi-field-label"><i class="fas fa-map-pin"></i> Location type</label>
                 <select name="location_type" class="mi-select" x-model="locationType" required>
@@ -109,6 +118,7 @@
                 </select>
                 <x-input-error :messages="$errors->get('location_id')" class="mt-1.5" />
             </div>
+            @endif
             <div>
                 <label for="reason" class="mi-field-label"><i class="fas fa-tag"></i> Reason</label>
                 <select id="reason" name="reason" class="mi-select" required>

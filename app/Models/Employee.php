@@ -114,6 +114,64 @@ class Employee extends Model
         };
     }
 
+    public function stationIcon(): string
+    {
+        return match ($this->station_type) {
+            'shop' => 'fa-store',
+            'warehouse' => 'fa-warehouse',
+            'field' => 'fa-car-side',
+            default => 'fa-building',
+        };
+    }
+
+    public function stationPillClass(): string
+    {
+        return match ($this->station_type) {
+            'shop' => 'emp-station-shop',
+            'warehouse' => 'emp-station-warehouse',
+            'field' => 'emp-station-field',
+            default => 'emp-station-office',
+        };
+    }
+
+    public function employmentTypeLabel(): string
+    {
+        return match ($this->employment_type) {
+            'permanent' => 'Permanent',
+            'contract' => 'Contract',
+            'casual' => 'Casual',
+            default => ucfirst($this->employment_type ?? ''),
+        };
+    }
+
+    public function employmentPillClass(): string
+    {
+        return match ($this->employment_type) {
+            'permanent' => 'emp-type-permanent',
+            'contract' => 'emp-type-contract',
+            'casual' => 'emp-type-casual',
+            default => 'emp-type-default',
+        };
+    }
+
+    public function initials(): string
+    {
+        $first = strtoupper(substr($this->first_name, 0, 1));
+        $last = $this->last_name ? strtoupper(substr($this->last_name, 0, 1)) : '';
+
+        return $first.$last;
+    }
+
+    public function statusBadgeClass(): string
+    {
+        return $this->is_active ? 'emp-badge emp-badge-green' : 'emp-badge emp-badge-slate';
+    }
+
+    public function statusLabel(): string
+    {
+        return $this->is_active ? 'Active' : 'Inactive';
+    }
+
     public function hasSystemAccess(): bool
     {
         return $this->user_id !== null;

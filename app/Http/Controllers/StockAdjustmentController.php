@@ -9,21 +9,31 @@ use App\Models\Shop;
 use App\Models\StockAdjustment;
 use App\Models\Warehouse;
 use App\Services\InventoryService;
+use App\Services\WarehouseAccessService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class StockAdjustmentController extends Controller
 {
-    public function __construct(private InventoryService $inventory)
-    {
+    public function __construct(
+        private InventoryService $inventory,
+        private WarehouseAccessService $warehouseAccess,
+    ) {
         $this->middleware('permission:inventory.view')->only(['index', 'show']);
         $this->middleware('permission:inventory.adjust')->only(['create', 'store', 'submit', 'destroy']);
     }
 
     public function index(Request $request): View
     {
-        $adjustments = StockAdjustment::query()
+        $scopedWarehouseId = $this->warehouseAccess->scopedWarehouseId(auth()->user());
+        $baseQuery = StockAdjustment::query();
+
+        if ($scopedWarehouseId) {
+            $this->warehouseAccess->scopeWarehouseMorph($baseQuery, 'location_type', 'location_id', $scopedWarehouseId);
+        }
+
+        $adjustments = (clone $baseQuery)
             ->with(['location', 'creator', 'items'])
             ->when($request->search, function ($q) use ($request) {
                 $q->where('adjustment_number', 'like', "%{$request->search}%")
@@ -37,10 +47,10 @@ class StockAdjustmentController extends Controller
             ->withQueryString();
 
         $stats = [
-            'total' => StockAdjustment::count(),
-            'draft' => StockAdjustment::where('status', 'draft')->count(),
-            'pending' => StockAdjustment::where('status', 'pending')->count(),
-            'approved' => StockAdjustment::where('status', 'approved')->count(),
+            'total' => (clone $baseQuery)->count(),
+            'draft' => (clone $baseQuery)->where('status', 'draft')->count(),
+            'pending' => (clone $baseQuery)->where('status', 'pending')->count(),
+            'approved' => (clone $baseQuery)->where('status', 'approved')->count(),
         ];
 
         return view('stock-adjustments.index', compact('adjustments', 'stats'));
@@ -48,11 +58,13 @@ class StockAdjustmentController extends Controller
 
     public function create(): View
     {
+        $scopedWarehouseId = $this->warehouseAccess->scopedWarehouseId(auth()->user());
         $warehouses = Warehouse::active()->orderBy('name')->get();
-        $shops = Shop::active()->orderBy('name')->get();
+        $shops = $scopedWarehouseId ? collect() : Shop::active()->orderBy('name')->get();
         $products = Product::active()->with('unit')->orderBy('name')->get(['id', 'part_number', 'name', 'cost_price', 'unit_id']);
+        $lockedWarehouse = $scopedWarehouseId ? $warehouses->firstWhere('id', $scopedWarehouseId) : null;
 
-        return view('stock-adjustments.create', compact('warehouses', 'shops', 'products'));
+        return view('stock-adjustments.create', compact('warehouses', 'shops', 'products', 'lockedWarehouse'));
     }
 
     public function store(StoreStockAdjustmentRequest $request): RedirectResponse

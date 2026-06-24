@@ -9,7 +9,10 @@ class Payment extends Model
 {
     protected $fillable = [
         'sale_id',
+        'shop_id',
         'method',
+        'direction',
+        'reverses_payment_id',
         'amount',
         'reference',
         'paid_at',
@@ -26,6 +29,16 @@ class Payment extends Model
         return $this->belongsTo(Sale::class);
     }
 
+    public function shop(): BelongsTo
+    {
+        return $this->belongsTo(Shop::class);
+    }
+
+    public function reversedPayment(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reverses_payment_id');
+    }
+
     public function receiver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'received_by');
@@ -40,6 +53,16 @@ class Payment extends Model
             'card' => 'Card',
             default => ucfirst(str_replace('_', ' ', $this->method)),
         };
+    }
+
+    public function isRefund(): bool
+    {
+        return $this->direction === 'refund';
+    }
+
+    public function directionLabel(): string
+    {
+        return $this->isRefund() ? 'Refund' : 'Receipt';
     }
 
     public static function methods(): array

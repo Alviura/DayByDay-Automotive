@@ -5,8 +5,8 @@
     @endphp
     <div class="space-y-4" x-data="orderProcessingPanel(@js($series->hasSavedPrices()), @js($pricesPanelExpanded), @js($pricesPanelCollapsed))" x-init="init()">
 
-        @if ($series->canEditPrices())
-            @can('procurement.manage')
+@if ($series->canEditPrices())
+    @can('procurement.manage')
                 <div class="mi-card qs-collapsible-card" :class="{ 'is-collapsed': !pricesExpanded }">
                     <div class="mi-card-head qs-collapsible-head" @click="togglePricesPanel()">
                         <div class="min-w-0 flex-1">
@@ -36,29 +36,29 @@
                           action="{{ route('quotation-series.items.prices', $series) }}"
                           @change="markDirty()"
                           @submit="onPricesFormSubmit()">
-                        @csrf
-                        @method('PATCH')
-                        <div class="mi-table-wrap overflow-x-auto">
-                            <table class="mi-table text-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Part Number</th>
+                @csrf
+                @method('PATCH')
+                <div class="mi-table-wrap overflow-x-auto">
+                    <table class="mi-table text-sm">
+                        <thead>
+                            <tr>
+                                <th>Part Number</th>
                                         <th>Product</th>
                                         <th>Quantity</th>
-                                        @if ($series->isImport())
-                                            <th>Unit Price ({{ $series->currency }})</th>
+                                @if ($series->isImport())
+                                    <th>Unit Price ({{ $series->currency }})</th>
                                             <th>Quantity per Packet</th>
                                             <th>Number of Packets</th>
                                             <th>Width × Length × Height</th>
-                                        @else
+                                @else
                                             <th>Unit Price (KES)</th>
                                             <th>Line Transport (KES)</th>
-                                        @endif
+                                @endif
                                         <th>MKT Wholesale Price</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($series->items as $index => $item)
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($series->items as $index => $item)
                                         @php
                                             $qty = (float) $item->quantity;
                                             $qtyPerPacket = (float) (old('items.'.$index.'.quantity_per_packet', $item->quantity_per_packet ?: 1) ?: 1);
@@ -82,8 +82,8 @@
                                             <td class="font-medium">{{ $item->product->part_number }}</td>
                                             <td class="text-gray-500 max-w-[10rem] truncate">{{ $item->product->productName?->name ?? $item->product->name }}</td>
                                             <td><span class="mi-cat-badge">{{ number_format($item->quantity, 0) }}</span></td>
-                                            <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
-                                            @if ($series->isImport())
+                                    <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
+                                    @if ($series->isImport())
                                                 <td><input type="number" step="0.0001" min="0" name="items[{{ $index }}][unit_price_foreign]" value="{{ old('items.'.$index.'.unit_price_foreign', $item->unit_price_foreign ?? $item->unit_price) }}" class="mi-input qs-order-input"></td>
                                                 <td>
                                                     <input type="number" step="0.01" min="0.01" name="items[{{ $index }}][quantity_per_packet]" x-model.number="qtyPerPacket" @input="onQtyPerPacketChange()" class="mi-input w-20">
@@ -117,10 +117,10 @@
                                                         <input type="number" step="0.0001" min="0" name="items[{{ $index }}][height]" value="{{ old('items.'.$index.'.height', $item->height) }}" class="mi-input w-16" placeholder="H" title="Height">
                                                     </div>
                                                 </td>
-                                            @else
+                                    @else
                                                 <td><input type="number" step="0.01" min="0" name="items[{{ $index }}][unit_price]" value="{{ old('items.'.$index.'.unit_price', $item->unit_price) }}" class="mi-input qs-order-input"></td>
-                                                <td><input type="number" step="0.01" min="0" name="items[{{ $index }}][transport]" value="{{ old('items.'.$index.'.transport', $item->transport ?? 0) }}" class="mi-input w-24"></td>
-                                            @endif
+                                        <td><input type="number" step="0.01" min="0" name="items[{{ $index }}][transport]" value="{{ old('items.'.$index.'.transport', $item->transport ?? 0) }}" class="mi-input w-24"></td>
+                                    @endif
                                             <td>
                                                 <div class="qs-lockable-field qs-lockable-field--wide" :class="{ 'is-override': overrideMkt }">
                                                     <input type="number"
@@ -141,32 +141,32 @@
                                                     </button>
                                                 </div>
                                             </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
                         <div class="qs-action-bar">
                             <span class="text-xs text-gray-400">{{ $series->items->count() }} lines · save before calculating</span>
                             <button type="submit" class="mi-btn-orange"><i class="fas fa-floppy-disk text-xs"></i> Save Prices</button>
-                        </div>
-                    </form>
-                    </div>
                 </div>
-            @endcan
-        @endif
+            </form>
+                    </div>
+        </div>
+    @endcan
+@endif
 
-        <div class="mi-card">
+    <div class="mi-card">
             <div class="mi-card-head">
                 <div class="qs-section-head w-full">
                     <div>
                         <div class="qs-section-title"><i class="fas fa-calculator"></i> Order Summary</div>
                         <p class="qs-section-sub">{{ ucfirst($series->purchase_type) }} · margin vs MKT wholesale price</p>
                     </div>
-                    @can('procurement.manage')
+                @can('procurement.manage')
                         @if ($series->canEditPrices())
-                            <form action="{{ route('quotation-series.calculate', $series) }}" method="POST" class="inline">
-                                @csrf
+                    <form action="{{ route('quotation-series.calculate', $series) }}" method="POST" class="inline">
+                        @csrf
                                 <button type="submit"
                                         class="mi-btn-orange text-xs transition-opacity"
                                         :disabled="!canRunCalculate()"
@@ -174,7 +174,7 @@
                                         :title="calculateHint()">
                                     <i class="fas fa-calculator"></i> Calculate Margins
                                 </button>
-                            </form>
+                    </form>
                         @elseif ($series->isCalculated())
                             <span class="mi-cat-badge qs-type-local">Calculated</span>
                         @endif
@@ -192,28 +192,28 @@
                     <div class="qs-empty-icon"><i class="fas fa-lock"></i></div>
                     <p class="font-semibold text-gray-600">Order summary locked</p>
                     <p class="text-sm text-gray-400 mt-1 max-w-sm mx-auto">Enter and save supplier prices above to unlock margin calculation.</p>
-                </div>
-            </div>
+        </div>
+    </div>
 
             <div x-show="pricesSaved" class="qs-summary-body" :class="{ 'qs-summary-stale': formDirty && @js($series->isCalculated()) }">
                 @include('quotation-series.partials.order-summary-table')
             </div>
 
-            @if ($series->canConfirm())
-                @can('procurement.manage')
+    @if ($series->canConfirm())
+        @can('procurement.manage')
                     <div class="qs-action-bar">
                         <span class="text-sm text-gray-500">Review margins, then confirm to auto-approve this series.</span>
                         <form action="{{ route('quotation-series.confirm', $series) }}" method="POST" class="inline"
                               data-confirm="Confirm order? This will auto-approve the quotation series."
                               data-confirm-variant="warning">
-                            @csrf
+                @csrf
                             <button type="submit" class="mi-btn-orange">
-                                <i class="fas fa-check text-xs"></i> Confirm Order &amp; Approve
-                            </button>
-                        </form>
+                    <i class="fas fa-check text-xs"></i> Confirm Order &amp; Approve
+                </button>
+            </form>
                     </div>
-                @endcan
-            @endif
+        @endcan
+    @endif
         </div>
     </div>
 @elseif ($series->status === 'quotation_draft')

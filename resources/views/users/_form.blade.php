@@ -2,75 +2,81 @@
     $currentRole = old('role', isset($user) ? $user->roles->pluck('name')->first() : null);
 @endphp
 
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+<div class="mi-form-grid">
     <div>
-        <x-input-label for="name" :value="__('Name')" />
-        <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name ?? '')" required autofocus />
-        <x-input-error :messages="$errors->get('name')" class="mt-2" />
+        <label class="mi-field-label" for="name"><i class="fas fa-user"></i> Full name</label>
+        <input id="name" name="name" type="text" class="mi-input" value="{{ old('name', $user->name ?? '') }}" required autofocus>
+        @error('name')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
     <div>
-        <x-input-label for="email" :value="__('Email')" />
-        <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email ?? '')" required />
-        <x-input-error :messages="$errors->get('email')" class="mt-2" />
+        <label class="mi-field-label" for="email"><i class="fas fa-envelope"></i> Email</label>
+        <input id="email" name="email" type="email" class="mi-input" value="{{ old('email', $user->email ?? '') }}" required>
+        @error('email')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
     <div>
-        <x-input-label for="phone" :value="__('Phone')" />
-        <x-text-input id="phone" name="phone" type="text" class="mt-1 block w-full" :value="old('phone', $user->phone ?? '')" />
-        <x-input-error :messages="$errors->get('phone')" class="mt-2" />
+        <label class="mi-field-label" for="phone"><i class="fas fa-phone"></i> Phone</label>
+        <input id="phone" name="phone" type="text" class="mi-input" value="{{ old('phone', $user->phone ?? '') }}" placeholder="Optional">
+        @error('phone')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
     <div>
-        <x-input-label for="role" :value="__('Role')" />
-        <select id="role" name="role" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
+        <label class="mi-field-label" for="role"><i class="fas fa-user-tag"></i> Role</label>
+        <select id="role" name="role" class="mi-select" required>
             <option value="">— Select role —</option>
             @foreach ($roles as $role)
                 <option value="{{ $role->name }}" @selected($currentRole === $role->name)>{{ $role->name }}</option>
             @endforeach
         </select>
-        <x-input-error :messages="$errors->get('role')" class="mt-2" />
+        @error('role')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
     <div>
-        <x-input-label for="shop_id" :value="__('Shop (optional)')" />
-        <select id="shop_id" name="shop_id" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+        <label class="mi-field-label" for="shop_id"><i class="fas fa-store"></i> Shop</label>
+        <select id="shop_id" name="shop_id" class="mi-select">
             <option value="">— None —</option>
             @foreach ($shops as $shop)
                 <option value="{{ $shop->id }}" @selected((string) old('shop_id', $user->shop_id ?? '') === (string) $shop->id)>{{ $shop->name }}</option>
             @endforeach
         </select>
-        <x-input-error :messages="$errors->get('shop_id')" class="mt-2" />
+        <p class="mi-field-hint">For shop managers and attendants.</p>
+        @error('shop_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
     <div>
-        <x-input-label for="warehouse_id" :value="__('Warehouse (optional)')" />
-        <select id="warehouse_id" name="warehouse_id" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+        <label class="mi-field-label" for="warehouse_id"><i class="fas fa-warehouse"></i> Warehouse</label>
+        <select id="warehouse_id" name="warehouse_id" class="mi-select">
             <option value="">— None —</option>
             @foreach ($warehouses as $warehouse)
                 <option value="{{ $warehouse->id }}" @selected((string) old('warehouse_id', $user->warehouse_id ?? '') === (string) $warehouse->id)>{{ $warehouse->name }}</option>
             @endforeach
         </select>
-        <x-input-error :messages="$errors->get('warehouse_id')" class="mt-2" />
+        <p class="mi-field-hint">For warehouse managers.</p>
+        @error('warehouse_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
     <div>
-        <x-input-label for="password" :value="isset($user) ? __('New Password (leave blank to keep)') : __('Password')" />
-        <x-text-input id="password" name="password" type="password" class="mt-1 block w-full" autocomplete="new-password" />
-        <x-input-error :messages="$errors->get('password')" class="mt-2" />
+        <label class="mi-field-label" for="password"><i class="fas fa-lock"></i> {{ isset($user) ? 'New password' : 'Password' }}</label>
+        <input id="password" name="password" type="password" class="mi-input" autocomplete="new-password" @unless(isset($user)) required @endunless>
+        @if (isset($user))
+            <p class="mi-field-hint">Leave blank to keep the current password.</p>
+        @endif
+        @error('password')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
     <div>
-        <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
-        <x-text-input id="password_confirmation" name="password_confirmation" type="password" class="mt-1 block w-full" autocomplete="new-password" />
+        <label class="mi-field-label" for="password_confirmation"><i class="fas fa-lock"></i> Confirm password</label>
+        <input id="password_confirmation" name="password_confirmation" type="password" class="mi-input" autocomplete="new-password">
     </div>
 </div>
 
-<div class="mt-6">
-    <label for="is_active" class="inline-flex items-center">
-        <input type="hidden" name="is_active" value="0">
-        <input type="checkbox" id="is_active" name="is_active" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
-            @checked(old('is_active', $user->is_active ?? true)) >
-        <span class="ms-2 text-sm text-gray-600">{{ __('Active (can sign in)') }}</span>
-    </label>
+<div class="mi-toggle-row">
+    <div class="mi-toggle-copy">
+        <p class="mi-toggle-title">Active account</p>
+        <p class="mi-toggle-desc">Inactive users cannot sign in to the system.</p>
+    </div>
+    <input type="hidden" name="is_active" value="0">
+    <input type="checkbox" id="is_active" name="is_active" value="1" class="mi-toggle-check"
+        @checked(old('is_active', $user->is_active ?? true))>
 </div>

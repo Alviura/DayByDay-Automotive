@@ -60,6 +60,11 @@ class StoreGoodsReceiptRequest extends FormRequest
                     );
                 }
             }
+
+            $warehouseAccess = app(\App\Services\WarehouseAccessService::class);
+            if (! $warehouseAccess->canUseWarehouseId($this->user(), (int) $this->warehouse_id)) {
+                $validator->errors()->add('warehouse_id', 'You can only post goods receipts to your assigned warehouse.');
+            }
         });
     }
 }

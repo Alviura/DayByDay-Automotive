@@ -11,7 +11,7 @@ use App\Models\ApprovalDemonstration;
 use App\Models\QuotationSeries;
 use App\Models\ReturnRecord;
 use App\Models\StockAdjustment;
-use App\Models\TransferRequest;
+use App\Models\StockTransfer;
 use App\Services\ApprovalService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,7 +29,7 @@ class ApprovalController extends Controller
         $filter = $request->query('filter', 'mine');
 
         $approvals = Approval::query()
-            ->with(['requester', 'currentApprover', 'approvable'])
+            ->with(['requester', 'currentApprover', 'approvable', 'actions.actor'])
             ->search($request->search)
             ->when($filter === 'mine', function ($q) {
                 $user = auth()->user();
@@ -80,7 +80,7 @@ class ApprovalController extends Controller
         $approval->load(['requester', 'currentApprover', 'actions.actor']);
 
         $approval->loadMorph('approvable', [
-            TransferRequest::class => ['items.product.unit', 'source', 'destination', 'requester'],
+            StockTransfer::class => ['items.product.unit', 'source', 'destination', 'creator', 'transferRequest'],
             StockAdjustment::class => ['items.product', 'location', 'creator'],
             QuotationSeries::class => ['items.product', 'supplier'],
             ReturnRecord::class => ['items.product', 'sale', 'supplier', 'shop', 'warehouse'],

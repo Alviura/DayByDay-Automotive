@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Supplier extends Model
@@ -41,6 +42,34 @@ class Supplier extends Model
                 $supplier->currency = strtoupper(trim($supplier->currency));
             }
         });
+    }
+
+    public function quotationSeries(): HasMany
+    {
+        return $this->hasMany(QuotationSeries::class);
+    }
+
+    public function purchaseOrders(): HasMany
+    {
+        return $this->hasMany(PurchaseOrder::class);
+    }
+
+    public function supplierReturns(): HasMany
+    {
+        return $this->hasMany(ReturnRecord::class)->where('type', 'supplier');
+    }
+
+    public function supplierPayments(): HasMany
+    {
+        return $this->hasMany(SupplierPayment::class);
+    }
+
+    public function purchaseTypeLabel(): string
+    {
+        return match ($this->purchase_type) {
+            'import' => 'Import',
+            default => 'Local',
+        };
     }
 
     public function scopeActive($query)

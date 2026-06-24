@@ -40,7 +40,7 @@
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('transfers.index') }}" class="mi-btn-ghost"><i class="fas fa-arrow-left text-xs"></i> Back</a>
                 @if ($transfer->canSubmit() && ($canManage ?? true))
-                    @can('transfers.request')
+                    @can('transfers.create')
                         <form action="{{ route('transfers.submit', $transfer) }}" method="POST" class="inline" data-confirm="Submit this transfer for approval?" data-confirm-variant="warning">
                             @csrf
                             <button type="submit" class="mi-btn-orange"><i class="fas fa-paper-plane text-xs"></i> Submit</button>
@@ -255,7 +255,7 @@
                     </section>
 
                     @if ($transfer->status === 'draft' && ($canManage ?? true))
-                        @can('transfers.request')
+                        @can('transfers.create')
                             <section class="mi-guide-section">
                                 <form action="{{ route('transfers.destroy', $transfer) }}" method="POST"
                                       data-confirm="Delete this draft transfer?" data-confirm-variant="danger">

@@ -64,16 +64,36 @@
             </div>
         @endif
 
-        @can('transfers.request')
-            <div class="inv-sidebar-block">
-                <a href="{{ route('transfers.create', ['type' => 'warehouse_to_shop', 'product_id' => $product->id]) }}" class="inv-link-card">
-                    <div class="flex items-center gap-2">
-                        <div class="inv-link-card-icon bg-teal-50 text-teal-700 border border-teal-100"><i class="fas fa-right-left"></i></div>
-                        <span class="text-sm font-semibold">Transfer to shop</span>
-                    </div>
-                    <i class="fas fa-arrow-right text-gray-300 text-xs"></i>
-                </a>
-            </div>
+        @php
+            $requestAccess = app(\App\Services\TransferRequestAccessService::class);
+            $stockAccess = app(\App\Services\StockTransferAccessService::class);
+            $scopedShopId = $requestAccess->scopedShopId(auth()->user());
+        @endphp
+        @can('transfer_requests.create')
+            @if ($scopedShopId)
+                <div class="inv-sidebar-block">
+                    <a href="{{ route('transfer-requests.create', ['product_id' => $product->id]) }}" class="inv-link-card">
+                        <div class="flex items-center gap-2">
+                            <div class="inv-link-card-icon bg-teal-50 text-teal-700 border border-teal-100"><i class="fas fa-inbox"></i></div>
+                            <span class="text-sm font-semibold">Request stock for shop</span>
+                        </div>
+                        <i class="fas fa-arrow-right text-gray-300 text-xs"></i>
+                    </a>
+                </div>
+            @endif
+        @endcan
+        @can('transfers.create')
+            @if ($stockAccess->canCreateType(auth()->user(), 'warehouse_to_shop'))
+                <div class="inv-sidebar-block">
+                    <a href="{{ route('stock-transfers.create', ['type' => 'warehouse_to_shop', 'product_id' => $product->id]) }}" class="inv-link-card">
+                        <div class="flex items-center gap-2">
+                            <div class="inv-link-card-icon bg-teal-50 text-teal-700 border border-teal-100"><i class="fas fa-right-left"></i></div>
+                            <span class="text-sm font-semibold">Transfer to shop</span>
+                        </div>
+                        <i class="fas fa-arrow-right text-gray-300 text-xs"></i>
+                    </a>
+                </div>
+            @endif
         @endcan
 
         <div class="inv-sidebar-block">

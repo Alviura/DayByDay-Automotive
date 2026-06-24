@@ -5,10 +5,12 @@ namespace App\Services;
 use App\Models\PurchaseOrder;
 use App\Models\QuotationSeries;
 use App\Models\User;
+use App\Notifications\ProcurementClosedNotification;
 use Illuminate\Support\Facades\DB;
 
 class ProcurementService
 {
+    public function __construct(private NotificationRecipientService $notificationRecipients) {}
     public function generatePurchaseOrder(QuotationSeries $series, ?User $user = null): PurchaseOrder
     {
         if (! $series->canGeneratePo()) {
@@ -77,5 +79,11 @@ class ProcurementService
             'closed_at' => now(),
             'title' => $title,
         ]);
+
+        $series->refresh();
+        $this->notificationRecipients->notifyMany(
+            $this->notificationRecipients->procurementStakeholders(),
+            new ProcurementClosedNotification($series)
+        );
     }
 }

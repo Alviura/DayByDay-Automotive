@@ -38,6 +38,11 @@ return [
             'icon' => 'fa-rotate-left',
             'pipeline' => true,
         ],
+        'journal' => [
+            'label' => 'Manual Journal',
+            'icon' => 'fa-book',
+            'pipeline' => true,
+        ],
         'procurement' => [
             'label' => 'Quotation Series (legacy)',
             'icon' => 'fa-file-invoice-dollar',
@@ -69,8 +74,9 @@ return [
         'adjustment' => \App\Models\StockAdjustment::class,
         'quotation-series' => \App\Models\QuotationSeries::class,
         'procurement' => \App\Models\QuotationSeries::class,
-        'transfer' => \App\Models\TransferRequest::class,
+        'transfer' => \App\Models\StockTransfer::class,
         'return' => \App\Models\ReturnRecord::class,
+        'journal' => \App\Models\JournalEntry::class,
     ],
 
     /*
@@ -83,8 +89,10 @@ return [
         \App\Models\ApprovalDemonstration::class => ['reference', 'title'],
         \App\Models\StockAdjustment::class => ['adjustment_number'],
         \App\Models\QuotationSeries::class => ['series_number', 'title'],
+        \App\Models\StockTransfer::class => ['transfer_number'],
         \App\Models\TransferRequest::class => ['request_number'],
         \App\Models\ReturnRecord::class => ['return_number'],
+        \App\Models\JournalEntry::class => ['entry_number', 'description'],
     ],
 
 ];

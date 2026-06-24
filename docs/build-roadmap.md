@@ -239,6 +239,7 @@ adjustments, and large discounts.
 
 ## M17. Reporting & Analytics (Spec §12)
 **Purpose:** Sales, inventory, procurement, transfer, and financial reports.
+- **Spec:** [reports-module-spec.md](./reports-module-spec.md) — **complete Phase R0 (reporting foundation) before adding new reports**
 - **Models:** — (read-only queries / query objects)
 - **Services:** `Reports/*` query classes; export (CSV/PDF)
 - **Controllers:** `ReportController` (sales, inventory, procurement, transfers, financial)

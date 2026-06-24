@@ -20,6 +20,157 @@
         body {
             font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
             -webkit-font-smoothing: antialiased;
+            color: #18181b;
+        }
+
+        /* Auth form panel — ensure readable text on white card */
+        .auth-form label,
+        .auth-form p,
+        .auth-form span,
+        .auth-form a { color: inherit; }
+        .auth-form .auth-label {
+            display: block; font-size: .82rem; font-weight: 600; color: #3f3f46; margin-bottom: .35rem;
+        }
+        .auth-form .auth-input {
+            display: block; width: 100%;
+            border: 1px solid #d4d4d8; border-radius: .65rem;
+            background: #fff; color: #18181b;
+            padding: .7rem .75rem .7rem 2.35rem;
+            font-size: .875rem; line-height: 1.4;
+            box-shadow: 0 1px 2px rgba(0,0,0,.04);
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .auth-form .auth-input--password { padding-right: 2.65rem; }
+        .auth-form .auth-input::placeholder { color: #a1a1aa; }
+        .auth-form .auth-input:focus {
+            outline: none; border-color: #f97316;
+            box-shadow: 0 0 0 3px rgba(249,115,22,.15);
+        }
+        .auth-form .auth-toggle-pw {
+            position: absolute; right: .55rem; top: 50%; transform: translateY(-50%);
+            display: flex; align-items: center; justify-content: center;
+            width: 2rem; height: 2rem; border: none; border-radius: .4rem;
+            background: transparent; color: #a1a1aa; cursor: pointer;
+            transition: color .15s, background .15s;
+        }
+        .auth-form .auth-toggle-pw:hover { color: #f97316; background: #fff7ed; }
+        .auth-form .auth-check-label { color: #52525b; font-size: .875rem; }
+        .auth-form .auth-link { color: #ea580c; font-weight: 600; }
+        .auth-form .auth-link:hover { color: #c2410c; text-decoration: underline; }
+        .auth-form .auth-error { color: #dc2626; font-size: .8rem; margin-top: .35rem; }
+        .auth-form .auth-status {
+            color: #15803d; font-size: .875rem; font-weight: 500;
+            padding: .65rem .85rem; border-radius: .5rem;
+            background: #f0fdf4; border: 1px solid #bbf7d0;
+        }
+        .auth-form .auth-submit {
+            width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+            border: none; border-radius: .65rem; padding: .8rem 1rem;
+            font-size: .875rem; font-weight: 700; color: #fff; cursor: pointer;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            box-shadow: 0 4px 14px rgba(249,115,22,.35);
+            transition: transform .15s, box-shadow .15s, filter .15s;
+        }
+        .auth-form .auth-submit:hover {
+            filter: brightness(1.05);
+            box-shadow: 0 6px 20px rgba(249,115,22,.45);
+            transform: translateY(-1px);
+        }
+
+        /* ── Animated workshop gears ── */
+        @keyframes auth-gear-cw {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes auth-gear-ccw {
+            from { transform: rotate(360deg); }
+            to { transform: rotate(0deg); }
+        }
+        .auth-gears {
+            position: absolute; pointer-events: none; z-index: 1;
+        }
+        .auth-gears--hero {
+            right: -1.5rem; top: 42%; width: 220px; height: 220px;
+            opacity: .9;
+        }
+        .auth-gears--bg {
+            left: -2rem; bottom: 18%; width: 180px; height: 180px;
+            opacity: .35;
+        }
+        .auth-gear {
+            position: absolute; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, rgba(255,255,255,.08), rgba(255,255,255,.02));
+            border: 1px solid rgba(249,115,22,.12);
+            color: rgba(249,115,22,.55);
+            box-shadow: inset 0 0 20px rgba(249,115,22,.06);
+        }
+        .auth-gear--lg {
+            width: 7.5rem; height: 7.5rem; font-size: 3.2rem;
+            right: 0; top: 0;
+            animation: auth-gear-cw 18s linear infinite;
+        }
+        .auth-gear--md {
+            width: 5rem; height: 5rem; font-size: 2.1rem;
+            left: 0; bottom: 1rem;
+            animation: auth-gear-ccw 14s linear infinite;
+        }
+        .auth-gear--sm {
+            width: 3.25rem; height: 3.25rem; font-size: 1.35rem;
+            right: 5.5rem; bottom: 0;
+            animation: auth-gear-cw 10s linear infinite;
+        }
+        .auth-gear--xs {
+            width: 2.25rem; height: 2.25rem; font-size: .95rem;
+            left: 4.5rem; top: 1.25rem;
+            animation: auth-gear-ccw 8s linear infinite;
+            color: rgba(251,191,36,.45);
+            border-color: rgba(251,191,36,.15);
+        }
+
+        /* ── Right panel ── */
+        .auth-panel-right {
+            position: relative; flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 2.5rem 1.25rem;
+            background:
+                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(249,115,22,.08), transparent 55%),
+                radial-gradient(ellipse 60% 40% at 100% 100%, rgba(249,115,22,.05), transparent 50%),
+                linear-gradient(180deg, #f8f8f7 0%, #f3f4f6 100%);
+        }
+        .auth-panel-right::before {
+            content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .4;
+            background-image:
+                linear-gradient(rgba(0,0,0,.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,.03) 1px, transparent 1px);
+            background-size: 28px 28px;
+        }
+        .auth-card {
+            position: relative; z-index: 1; width: 100%; max-width: 420px;
+            overflow: hidden; border-radius: 1.25rem;
+            background: #fff;
+            box-shadow: 0 12px 40px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04);
+        }
+        .auth-card-accent {
+            height: 4px; width: 100%;
+            background: linear-gradient(90deg, var(--accent), #fbbf24, var(--accent));
+            background-size: 200% 100%;
+            animation: auth-shimmer 4s ease-in-out infinite;
+        }
+        @keyframes auth-shimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .auth-mobile-gears {
+            position: relative; width: 4.5rem; height: 4.5rem; margin-bottom: .75rem;
+        }
+        .auth-mobile-gears .auth-gear--lg {
+            width: 3rem; height: 3rem; font-size: 1.35rem;
+            right: 0; top: 0; animation-duration: 12s;
+        }
+        .auth-mobile-gears .auth-gear--sm {
+            width: 1.75rem; height: 1.75rem; font-size: .75rem;
+            left: 0; bottom: .25rem; right: auto; animation-duration: 8s;
         }
     </style>
     @stack('styles')
@@ -41,11 +192,22 @@
         <div class="pointer-events-none absolute -bottom-12 -right-8 h-56 w-56 rounded-full"
              style="background:radial-gradient(circle, rgba(249,115,22,.12) 0%, transparent 65%)"></div>
 
-        {{-- Decorative oversized icons --}}
+        {{-- Animated gears — background layer --}}
+        <div class="auth-gears auth-gears--bg" aria-hidden="true">
+            <div class="auth-gear auth-gear--md"><i class="fas fa-gear"></i></div>
+            <div class="auth-gear auth-gear--xs"><i class="fas fa-gear"></i></div>
+        </div>
+
+        {{-- Animated gears — hero cluster --}}
+        <div class="auth-gears auth-gears--hero" aria-hidden="true">
+            <div class="auth-gear auth-gear--lg"><i class="fas fa-gear"></i></div>
+            <div class="auth-gear auth-gear--sm"><i class="fas fa-gear"></i></div>
+            <div class="auth-gear auth-gear--xs"><i class="fas fa-gear"></i></div>
+        </div>
+
+        {{-- Subtle wrench watermark --}}
         <i class="fas fa-wrench pointer-events-none absolute -bottom-10 right-2 -rotate-[30deg] text-[15rem] leading-none"
            style="color:rgba(255,255,255,.028)"></i>
-        <i class="fas fa-gear pointer-events-none absolute right-12 top-20 text-[7rem] leading-none"
-           style="color:rgba(249,115,22,.065)"></i>
 
         {{-- Logo --}}
         <div class="relative z-10 flex items-center gap-3">
@@ -115,48 +277,46 @@
     {{-- ============================================================
          RIGHT FORM PANEL
     ============================================================ --}}
-    <div class="flex flex-1 flex-col items-center justify-center bg-stone-100 px-5 py-10 sm:px-8">
-        <div class="w-full max-w-[420px]">
+    <div class="auth-panel-right px-5 sm:px-8">
+        <div class="w-full max-w-[420px] relative z-10">
 
-            {{-- Mobile-only logo --}}
+            {{-- Mobile logo + mini gears --}}
             <div class="mb-7 flex flex-col items-center lg:hidden">
-                <span class="mb-2.5 flex h-13 w-13 items-center justify-center rounded-2xl text-2xl text-white shadow-xl"
+                <div class="auth-mobile-gears" aria-hidden="true">
+                    <div class="auth-gear auth-gear--lg"><i class="fas fa-gear"></i></div>
+                    <div class="auth-gear auth-gear--sm"><i class="fas fa-gear"></i></div>
+                </div>
+                <span class="mb-2 flex h-14 w-14 items-center justify-center rounded-2xl text-2xl text-white"
                       style="background:linear-gradient(135deg,var(--accent),var(--accent-dk));
-                             box-shadow:0 8px 24px rgba(249,115,22,.4);
-                             height:3.25rem;width:3.25rem">
+                             box-shadow:0 8px 24px rgba(249,115,22,.4)">
                     <i class="fas fa-gauge-high"></i>
                 </span>
                 <div class="text-2xl font-extrabold tracking-tight text-zinc-900">DayByDay</div>
-                <div class="mt-0.5 text-[.63rem] font-semibold uppercase tracking-[.15em] text-zinc-400">Automotive System</div>
+                <div class="mt-0.5 text-[.63rem] font-semibold uppercase tracking-[.15em] text-zinc-500">Automotive System</div>
             </div>
 
-            {{-- Card --}}
-            <div class="relative overflow-hidden rounded-2xl bg-white shadow-[0_8px_48px_rgba(0,0,0,0.11)] ring-1 ring-zinc-200/70">
-                {{-- Accent top bar --}}
-                <div class="h-[3px] w-full"
-                     style="background:linear-gradient(90deg, var(--accent) 0%, #fbbf24 100%)"></div>
+            <div class="auth-card">
+                <div class="auth-card-accent"></div>
 
-                <div class="px-7 pb-8 pt-6">
-                    {{-- Card header --}}
+                <div class="px-7 pb-8 pt-6 auth-form">
                     <div class="mb-6">
-                        <h2 class="text-[1.4rem] font-extrabold tracking-tight text-zinc-900">{{ $heading }}</h2>
-                        <p class="mt-1 text-sm text-zinc-400">{{ $subheading }}</p>
+                        <h2 class="text-[1.45rem] font-extrabold tracking-tight text-zinc-900">{{ $heading }}</h2>
+                        <p class="mt-1.5 text-sm text-zinc-500 leading-relaxed">{{ $subheading }}</p>
                     </div>
 
                     {{ $slot }}
                 </div>
             </div>
 
-            {{-- Trust badges --}}
-            <div class="mt-5 flex flex-wrap items-center justify-center gap-5 text-[.67rem] font-medium text-zinc-400">
-                <span class="inline-flex items-center gap-1.5">
-                    <i class="fas fa-lock" style="color:#4ade80"></i> Secured
+            <div class="mt-5 flex flex-wrap items-center justify-center gap-4 sm:gap-5 text-[.67rem] font-semibold text-zinc-500">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 ring-1 ring-zinc-200/80">
+                    <i class="fas fa-lock text-emerald-500"></i> Secured
                 </span>
-                <span class="inline-flex items-center gap-1.5">
-                    <i class="fas fa-shield-halved" style="color:#4ade80"></i> Data Protected
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 ring-1 ring-zinc-200/80">
+                    <i class="fas fa-shield-halved text-emerald-500"></i> Protected
                 </span>
-                <span class="inline-flex items-center gap-1.5">
-                    <i class="fas fa-user-shield" style="color:#4ade80"></i> Role-based Access
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 ring-1 ring-zinc-200/80">
+                    <i class="fas fa-user-shield text-emerald-500"></i> Role-based
                 </span>
             </div>
 

@@ -105,6 +105,11 @@ class GoodsReceiptNote extends Model
         return $this->hasMany(GoodsReceiptNoteItem::class);
     }
 
+    public function supplierPayments(): HasMany
+    {
+        return $this->hasMany(SupplierPayment::class);
+    }
+
     public function totalReceivedQuantity(): float
     {
         return round((float) $this->items->sum(fn (GoodsReceiptNoteItem $item) => $item->normalizeQuantity($item->received_quantity)), 2);

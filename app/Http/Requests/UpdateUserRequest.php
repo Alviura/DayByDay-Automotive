@@ -28,4 +28,17 @@ class UpdateUserRequest extends FormRequest
             'is_active' => ['boolean'],
         ];
     }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            if ($this->role === 'Shop Manager' && ! $this->shop_id) {
+                $validator->errors()->add('shop_id', 'Shop Managers must be assigned to a shop.');
+            }
+
+            if ($this->role === 'Warehouse Manager' && ! $this->warehouse_id) {
+                $validator->errors()->add('warehouse_id', 'Warehouse Managers must be assigned to a warehouse.');
+            }
+        });
+    }
 }

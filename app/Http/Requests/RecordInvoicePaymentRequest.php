@@ -18,6 +18,7 @@ class RecordInvoicePaymentRequest extends FormRequest
             'payments.*.method' => ['required', 'string', 'in:cash,mpesa,bank_transfer,card'],
             'payments.*.amount' => ['required', 'numeric', 'min:0.01'],
             'payments.*.reference' => ['nullable', 'string', 'max:120'],
+            'payments.*.shop_id' => ['nullable', 'exists:shops,id'],
         ];
     }
 }

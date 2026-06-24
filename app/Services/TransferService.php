@@ -9,90 +9,122 @@ use App\Models\StockTransfer;
 use App\Models\StockTransferItem;
 use App\Models\TransferRequest;
 use App\Models\User;
+use App\Notifications\TransferDispatchedNotification;
+use App\Notifications\TransferReceivedNotification;
 use Illuminate\Support\Facades\DB;
 
 class TransferService
 {
-    public function __construct(private InventoryService $inventory) {}
+    public function __construct(
+        private InventoryService $inventory,
+        private GlPostingService $gl,
+        private NotificationRecipientService $notificationRecipients,
+    ) {}
 
-    public function reserveForRequest(TransferRequest $request): void
+    public function createFromTransferRequest(TransferRequest $request, User $user): StockTransfer
     {
-        $request->load(['items.product', 'source']);
+        $request->load(['items.product', 'source', 'destination']);
 
-        if (! $request->source) {
+        return DB::transaction(function () use ($request, $user) {
+            $transfer = StockTransfer::create([
+                'transfer_number' => StockTransfer::generateNumber(),
+                'transfer_request_id' => $request->id,
+                'type' => $request->type,
+                'source_type' => $request->source_type,
+                'source_id' => $request->source_id,
+                'destination_type' => $request->destination_type,
+                'destination_id' => $request->destination_id,
+                'status' => 'draft',
+                'created_by' => $user->id,
+                'notes' => $request->notes,
+            ]);
+
+            foreach ($request->items as $item) {
+                StockTransferItem::create([
+                    'stock_transfer_id' => $transfer->id,
+                    'product_id' => $item->product_id,
+                    'quantity' => $item->requested_quantity,
+                ]);
+            }
+
+            $request->update(['stock_transfer_id' => $transfer->id]);
+
+            return $transfer->load(['items.product', 'source', 'destination', 'transferRequest']);
+        });
+    }
+
+    public function reserveForTransfer(StockTransfer $transfer): void
+    {
+        $transfer->load(['items.product', 'source']);
+
+        if (! $transfer->source) {
             throw new InventoryException('Transfer source is missing.');
         }
 
-        DB::transaction(function () use ($request) {
-            foreach ($request->items as $item) {
-                $qty = $item->dispatchQuantity();
+        DB::transaction(function () use ($transfer) {
+            foreach ($transfer->items as $item) {
+                $qty = $item->transferQuantity();
 
                 if ($qty > 0) {
-                    $this->inventory->reserve($item->product, $request->source, $qty);
+                    $this->inventory->reserve($item->product, $transfer->source, $qty);
                 }
             }
         });
     }
 
-    public function dispatch(TransferRequest $request, ?string $notes = null, ?User $user = null): StockTransfer
+    public function dispatch(StockTransfer $transfer, ?string $notes = null, ?User $user = null): StockTransfer
     {
-        if (! $request->canDispatch()) {
-            throw new \InvalidArgumentException('This transfer request cannot be dispatched.');
+        if (! $transfer->canDispatch()) {
+            throw new \InvalidArgumentException('This stock transfer cannot be dispatched.');
         }
 
         $user ??= auth()->user();
-        $request->load(['items.product', 'source', 'destination']);
+        $transfer->load(['items.product', 'source', 'destination', 'transferRequest']);
 
-        return DB::transaction(function () use ($request, $notes, $user) {
-            $transfer = StockTransfer::create([
-                'transfer_number' => StockTransfer::generateNumber(),
-                'transfer_request_id' => $request->id,
-                'source_type' => $request->source_type,
-                'source_id' => $request->source_id,
-                'destination_type' => $request->destination_type,
-                'destination_id' => $request->destination_id,
-                'status' => 'in_transit',
-                'dispatched_by' => $user->id,
-                'dispatched_at' => now(),
-                'notes' => $notes,
-            ]);
-
-            foreach ($request->items as $item) {
-                $qty = $item->dispatchQuantity();
+        return DB::transaction(function () use ($transfer, $notes, $user) {
+            foreach ($transfer->items as $item) {
+                $qty = $item->transferQuantity();
 
                 if ($qty <= 0) {
                     continue;
                 }
 
-                $balance = $this->inventory->getBalance($item->product, $request->source);
+                $balance = $this->inventory->getBalance($item->product, $transfer->source);
                 $unitCost = (float) ($balance?->average_cost ?? $item->product->cost_price ?? 0);
 
-                StockTransferItem::create([
-                    'stock_transfer_id' => $transfer->id,
-                    'product_id' => $item->product_id,
+                $item->update([
                     'dispatched_quantity' => $qty,
-                    'received_quantity' => 0,
-                    'damaged_quantity' => 0,
                 ]);
 
                 $this->inventory->record(
                     $item->product,
-                    $request->source,
+                    $transfer->source,
                     'transfer_out',
                     -$qty,
                     $unitCost,
                     $transfer,
                     $transfer->transfer_number,
-                    'Transfer out to '.$request->destinationLabel(),
+                    'Transfer out to '.$transfer->destinationLabel(),
                     $user
                 );
 
-                $this->inventory->release($item->product, $request->source, $qty);
+                $this->inventory->release($item->product, $transfer->source, $qty);
             }
 
-            $request->update(['status' => 'dispatched']);
+            $transfer->update([
+                'status' => 'in_transit',
+                'dispatched_by' => $user->id,
+                'dispatched_at' => now(),
+                'notes' => $notes ?? $transfer->notes,
+            ]);
 
-            return $transfer->load(['items.product', 'source', 'destination', 'transferRequest']);
+            $transfer = $transfer->fresh(['items.product', 'source', 'destination', 'transferRequest']);
+            $this->notificationRecipients->notifyMany(
+                $this->notificationRecipients->receiversForTransfer($transfer),
+                new TransferDispatchedNotification($transfer)
+            );
+
+            return $transfer;
         });
     }
 
@@ -146,18 +178,28 @@ class TransferService
             );
 
             $transfer->update([
-                'status' => $allReceived ? 'received' : 'in_transit',
+                'status' => $allReceived ? 'closed' : 'in_transit',
                 'received_by' => $allReceived ? $user->id : $transfer->received_by,
                 'received_at' => $allReceived ? now() : $transfer->received_at,
                 'notes' => $notes ?? $transfer->notes,
             ]);
 
             if ($allReceived && $transfer->transferRequest) {
-                $transfer->transferRequest->update(['status' => 'completed']);
-                $transfer->update(['status' => 'closed']);
+                $transfer->transferRequest->update(['status' => 'fulfilled']);
             }
 
-            return $transfer->fresh(['items.product', 'source', 'destination', 'transferRequest']);
+            $transfer = $transfer->fresh(['items.product', 'source', 'destination', 'transferRequest']);
+
+            if ($transfer->status === 'closed') {
+                $this->gl->postTransferCompleted($transfer, $user);
+
+                $this->notificationRecipients->notifyMany(
+                    $this->notificationRecipients->sourceStakeholdersForTransfer($transfer),
+                    new TransferReceivedNotification($transfer)
+                );
+            }
+
+            return $transfer;
         });
     }
 

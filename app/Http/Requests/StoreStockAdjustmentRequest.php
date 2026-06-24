@@ -56,6 +56,15 @@ class StoreStockAdjustmentRequest extends FormRequest
             if ($type === 'shop' && ! \App\Models\Shop::whereKey($id)->exists()) {
                 $validator->errors()->add('location_id', 'The selected shop is invalid.');
             }
+
+            $warehouseAccess = app(\App\Services\WarehouseAccessService::class);
+            if (! $warehouseAccess->canUseWarehouseLocation($this->user(), (string) $type, (int) $id)) {
+                $validator->errors()->add('location_id', 'You can only adjust stock at your assigned warehouse.');
+            }
+
+            if ($type === 'shop' && $warehouseAccess->scopedWarehouseId($this->user())) {
+                $validator->errors()->add('location_type', 'Warehouse Managers can only adjust warehouse stock.');
+            }
         });
     }
 

@@ -11,14 +11,17 @@ use App\Models\GoodsReceiptNoteItem;
 use App\Models\PurchaseOrder;
 use App\Models\Warehouse;
 use App\Services\GoodsReceiptService;
+use App\Services\WarehouseAccessService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class GoodsReceiptController extends Controller
 {
-    public function __construct(private GoodsReceiptService $goodsReceipt)
-    {
+    public function __construct(
+        private GoodsReceiptService $goodsReceipt,
+        private WarehouseAccessService $warehouseAccess,
+    ) {
         $this->middleware('permission:procurement.view')->only(['index', 'show']);
         $this->middleware('permission:procurement.manage')->only(['create', 'store', 'void']);
     }
@@ -46,11 +49,14 @@ class GoodsReceiptController extends Controller
         ];
         $stats['total_good'] = max(0, round($stats['total_received'] - $stats['total_damaged'], 2));
 
+        $scopedWarehouseId = $this->warehouseAccess->scopedWarehouseId(auth()->user());
+
         $receipts = GoodsReceiptNote::query()
             ->with(['warehouse', 'receiver', 'purchaseOrder.supplier', 'quotationSeries'])
             ->withCount('items')
             ->withSum('items as total_received_qty', 'received_quantity')
             ->withSum('items as total_damaged_qty', 'damaged_quantity')
+            ->when($scopedWarehouseId, fn ($q) => $q->where('warehouse_id', $scopedWarehouseId))
             ->when($request->search, function ($query) use ($request) {
                 $term = $request->search;
                 $query->where(function ($q) use ($term) {
@@ -89,8 +95,10 @@ class GoodsReceiptController extends Controller
         $purchaseOrder->load(['items.product.unit', 'supplier', 'quotationSeries']);
 
         $warehouses = Warehouse::active()->orderBy('name')->get();
+        $scopedWarehouseId = $this->warehouseAccess->scopedWarehouseId(auth()->user());
+        $defaultWarehouseId = $scopedWarehouseId ?: $warehouses->first()?->id;
 
-        return view('goods-receipts.create', compact('purchaseOrder', 'warehouses'));
+        return view('goods-receipts.create', compact('purchaseOrder', 'warehouses', 'defaultWarehouseId', 'scopedWarehouseId'));
     }
 
     public function store(StoreGoodsReceiptRequest $request, PurchaseOrder $purchaseOrder): RedirectResponse

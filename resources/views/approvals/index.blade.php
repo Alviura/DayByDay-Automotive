@@ -202,7 +202,7 @@
                                     @endif
                                 </td>
                                 <td class="text-sm text-gray-600">{{ $approval->requester?->name ?? '—' }}</td>
-                                <td class="text-sm text-gray-600">{{ $approval->currentApprover?->name ?? '—' }}</td>
+                                <td class="text-sm text-gray-600">{{ $approval->resolvedApproverName() ?? '—' }}</td>
                                 <td>
                                     <span class="{{ $approval->status->badgeClass() }}">{{ $approval->status->label() }}</span>
                                 </td>

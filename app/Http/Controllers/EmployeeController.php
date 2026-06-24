@@ -24,25 +24,41 @@ class EmployeeController extends Controller
 
     public function index(Request $request): View
     {
-        $employees = Employee::with(['shop', 'warehouse', 'user', 'currentSalary'])
+        $statusFilter = $request->status ?: 'all';
+
+        $employees = Employee::with(['shop', 'warehouse', 'user.roles', 'currentSalary'])
             ->search($request->search)
-            ->when($request->status === 'active', fn ($q) => $q->where('is_active', true))
-            ->when($request->status === 'inactive', fn ($q) => $q->where('is_active', false))
+            ->when($statusFilter === 'active', fn ($q) => $q->where('is_active', true))
+            ->when($statusFilter === 'inactive', fn ($q) => $q->where('is_active', false))
+            ->when($statusFilter === 'payroll', fn ($q) => $q->onPayroll())
             ->when($request->station, fn ($q) => $q->where('station_type', $request->station))
+            ->when($request->employment_type, fn ($q) => $q->where('employment_type', $request->employment_type))
             ->when($request->sort === 'name', fn ($q) => $q->orderBy('first_name')->orderBy('last_name'))
             ->when($request->sort === 'oldest', fn ($q) => $q->oldest())
             ->when(! in_array($request->sort, ['name', 'oldest'], true), fn ($q) => $q->latest())
             ->paginate(15)
             ->withQueryString();
 
+        $onPayroll = Employee::onPayroll()->with('currentSalary')->get();
+        $monthlyGross = round($onPayroll->sum(fn (Employee $e) => (float) ($e->currentSalary?->grossPay() ?? 0)), 2);
+
         $stats = [
             'total' => Employee::count(),
             'active' => Employee::where('is_active', true)->count(),
+            'inactive' => Employee::where('is_active', false)->count(),
             'on_payroll' => Employee::onPayroll()->count(),
             'with_login' => Employee::whereNotNull('user_id')->count(),
+            'monthly_gross' => $monthlyGross,
         ];
 
-        return view('employees.index', compact('employees', 'stats'));
+        $pipeline = [
+            ['key' => 'all', 'label' => 'All Staff', 'count' => Employee::count(), 'icon' => 'fa-users'],
+            ['key' => 'active', 'label' => 'Active', 'count' => $stats['active'], 'icon' => 'fa-circle-check'],
+            ['key' => 'payroll', 'label' => 'On Payroll', 'count' => $stats['on_payroll'], 'icon' => 'fa-money-check-dollar'],
+            ['key' => 'inactive', 'label' => 'Inactive', 'count' => $stats['inactive'], 'icon' => 'fa-user-slash'],
+        ];
+
+        return view('employees.index', compact('employees', 'stats', 'pipeline', 'statusFilter'));
     }
 
     public function create(): View
@@ -99,7 +115,7 @@ class EmployeeController extends Controller
         return [
             'shops' => Shop::active()->orderBy('name')->get(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
-            'roles' => Role::whereIn('name', ['Shop Manager', 'Shop Attendant', 'Administrator'])->orderBy('name')->get(),
+            'roles' => Role::whereIn('name', ['Shop Manager', 'Shop Attendant', 'Warehouse Manager', 'Administrator'])->orderBy('name')->get(),
         ];
     }
 

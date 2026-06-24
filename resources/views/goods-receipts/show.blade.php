@@ -46,6 +46,13 @@
                         <i class="fas fa-file-invoice-dollar text-xs"></i> View PO
                     </a>
                 @endif
+                @if ($goodsReceiptNote->isPosted())
+                    @can('supplier_payments.manage')
+                        <a href="{{ route('supplier-payments.create', ['goods_receipt_note_id' => $goodsReceiptNote->id, 'supplier_id' => $goodsReceiptNote->purchaseOrder?->supplier_id]) }}" class="mi-btn-orange">
+                            <i class="fas fa-hand-holding-dollar text-xs"></i> Record Payment
+                        </a>
+                    @endcan
+                @endif
                 @if ($goodsReceiptNote->canVoid())
                     @can('procurement.manage')
                         <button type="button" class="mi-btn-ghost text-rose-600 border-rose-200 hover:bg-rose-50" x-show="!voidOpen" @click="voidOpen = true; $nextTick(() => $refs.voidPanel?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }))">

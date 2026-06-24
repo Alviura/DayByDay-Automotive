@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRoleRequest;
+use App\Models\User;
+use App\Support\PermissionRegistry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Permission;
@@ -11,6 +13,14 @@ use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
+    /** @var list<string> */
+    public const CORE_ROLES = [
+        'Administrator',
+        'Shop Manager',
+        'Warehouse Manager',
+        'Shop Attendant',
+    ];
+
     public function __construct()
     {
         $this->middleware('permission:roles.view')->only(['index']);
@@ -21,7 +31,18 @@ class RoleController extends Controller
     {
         $roles = Role::withCount(['permissions', 'users'])->orderBy('name')->get();
 
-        return view('roles.index', compact('roles'));
+        $stats = [
+            'total_roles' => $roles->count(),
+            'total_permissions' => count(PermissionRegistry::allNames()),
+            'assigned_users' => User::count(),
+            'custom_roles' => $roles->whereNotIn('name', self::CORE_ROLES)->count(),
+        ];
+
+        return view('roles.index', [
+            'roles' => $roles,
+            'stats' => $stats,
+            'coreRoles' => self::CORE_ROLES,
+        ]);
     }
 
     public function create(): View
@@ -43,6 +64,8 @@ class RoleController extends Controller
 
     public function edit(Role $role): View
     {
+        $role->loadCount(['permissions', 'users']);
+
         return view('roles.edit', [
             'role' => $role,
             'permissions' => $this->groupedPermissions(),
@@ -62,7 +85,7 @@ class RoleController extends Controller
 
     public function destroy(Role $role): RedirectResponse
     {
-        if (in_array($role->name, ['Administrator', 'Shop Manager'], true)) {
+        if (in_array($role->name, self::CORE_ROLES, true)) {
             return back()->with('error', 'Core system roles cannot be deleted.');
         }
 
@@ -72,14 +95,10 @@ class RoleController extends Controller
     }
 
     /**
-     * Group permissions by their module prefix for display.
-     *
-     * @return \Illuminate\Support\Collection<string, \Illuminate\Support\Collection>
+     * @return \Illuminate\Support\Collection<int, array{key: string, label: string, permissions: \Illuminate\Support\Collection}>
      */
     private function groupedPermissions()
     {
-        return Permission::orderBy('name')->get()->groupBy(function ($permission) {
-            return explode('.', $permission->name)[0];
-        });
+        return PermissionRegistry::groupedWithMeta();
     }
 }

@@ -21,6 +21,8 @@ use Illuminate\Support\Facades\DB;
 
 class InventoryService
 {
+    public function __construct(private GlPostingService $gl) {}
+
     /**
      * quantity_reserved is incremented by reserve() for:
      * - POS held sales (M15)
@@ -229,6 +231,8 @@ class InventoryService
                     $user
                 );
             }
+
+            $this->gl->postStockAdjustment($adjustment->fresh(['items.product']), $user);
         });
     }
 

@@ -1,34 +1,59 @@
 @php
     $assigned = $assigned ?? old('permissions', []);
+    $isCore = isset($role) && in_array($role->name, $coreRoles ?? [], true);
 @endphp
 
-<div class="max-w-sm">
-    <x-input-label for="name" :value="__('Role Name')" />
-    <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $role->name ?? '')" required autofocus />
-    <x-input-error :messages="$errors->get('name')" class="mt-2" />
+<div class="mi-form-grid">
+    <div class="mi-span-full">
+        <label class="mi-field-label" for="name"><i class="fas fa-user-tag"></i> Role name</label>
+        <input id="name" name="name" type="text" class="mi-input" value="{{ old('name', $role->name ?? '') }}" required autofocus
+            @if ($isCore) readonly @endif>
+        @if ($isCore)
+            <p class="mi-field-hint">Core system role names cannot be changed.</p>
+        @endif
+        @error('name')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+    </div>
 </div>
 
 <div class="mt-6">
-    <h3 class="font-semibold text-gray-800 mb-2">Permissions</h3>
-    <x-input-error :messages="$errors->get('permissions')" class="mb-2" />
+    <div class="rol-perm-toolbar">
+        <div>
+            <p class="text-sm font-bold text-gray-900">Permissions</p>
+            <p class="text-xs text-gray-500 mt-0.5">Grant access by module — users inherit these through the role.</p>
+        </div>
+        <div class="mi-input-wrap" style="max-width:16rem">
+            <i class="fas fa-magnifying-glass"></i>
+            <input type="text" id="rol-perm-filter" class="mi-input" placeholder="Filter permissions…"
+                oninput="document.querySelectorAll('.rol-perm-group').forEach(g => {
+                    const q = this.value.toLowerCase();
+                    const text = g.textContent.toLowerCase();
+                    g.style.display = !q || text.includes(q) ? '' : 'none';
+                })">
+        </div>
+    </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        @foreach ($permissions as $group => $items)
-            <div class="border border-gray-200 rounded-md p-4">
-                <div class="flex items-center justify-between mb-2">
-                    <h4 class="font-medium text-gray-700 capitalize">{{ str_replace('-', ' ', $group) }}</h4>
-                    <label class="text-xs text-gray-500 inline-flex items-center gap-1">
-                        <input type="checkbox" class="rounded border-gray-300" onchange="this.closest('div').parentNode.querySelectorAll('input[name=\'permissions[]\']').forEach(c => c.checked = this.checked)">
-                        all
+    @error('permissions')<p class="text-xs text-red-600 mb-3">{{ $message }}</p>@enderror
+
+    <div class="rol-perm-grid">
+        @foreach ($permissions as $group)
+            <div class="rol-perm-group">
+                <div class="rol-perm-group-head">
+                    <span class="rol-perm-group-title">{{ $group['label'] }}</span>
+                    <label class="rol-perm-group-toggle">
+                        <input type="checkbox" class="rol-group-toggle"
+                            onchange="this.closest('.rol-perm-group').querySelectorAll('input[name=\'permissions[]\']').forEach(c => c.checked = this.checked)">
+                        Select all
                     </label>
                 </div>
-                <div class="space-y-1">
-                    @foreach ($items as $permission)
-                        <label class="flex items-center gap-2 text-sm text-gray-600">
-                            <input type="checkbox" name="permissions[]" value="{{ $permission->name }}"
-                                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                @checked(in_array($permission->name, old('permissions', $assigned), true))>
-                            {{ $permission->name }}
+                <div class="rol-perm-list">
+                    @foreach ($group['permissions'] as $permission)
+                        <label class="rol-perm-item">
+                            <input type="checkbox" name="permissions[]" value="{{ $permission['name'] }}"
+                                @checked(in_array($permission['name'], $assigned, true))>
+                            <span>
+                                <strong>{{ $permission['label'] }}</strong>
+                                <code class="block text-[.65rem] text-gray-400 mt-0.5">{{ $permission['name'] }}</code>
+                            </span>
                         </label>
                     @endforeach
                 </div>

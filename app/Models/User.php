@@ -84,4 +84,49 @@ class User extends Authenticatable
     {
         return $query->where('is_active', true);
     }
+
+    public function initials(): string
+    {
+        $parts = preg_split('/\s+/', trim($this->name)) ?: [];
+
+        if (count($parts) >= 2) {
+            return strtoupper(mb_substr($parts[0], 0, 1).mb_substr($parts[1], 0, 1));
+        }
+
+        return strtoupper(mb_substr($this->name, 0, 2));
+    }
+
+    public function roleName(): ?string
+    {
+        return $this->roles->first()?->name;
+    }
+
+    public function rolePillClass(): string
+    {
+        return match ($this->roleName()) {
+            'Administrator' => 'usr-role-admin',
+            'Shop Manager' => 'usr-role-shop',
+            'Warehouse Manager' => 'usr-role-warehouse',
+            'Shop Attendant' => 'usr-role-attendant',
+            default => 'usr-role-default',
+        };
+    }
+
+    public function locationLabel(): ?string
+    {
+        return $this->shop?->name ?? $this->warehouse?->name;
+    }
+
+    public function locationType(): ?string
+    {
+        if ($this->shop_id) {
+            return 'shop';
+        }
+
+        if ($this->warehouse_id) {
+            return 'warehouse';
+        }
+
+        return null;
+    }
 }

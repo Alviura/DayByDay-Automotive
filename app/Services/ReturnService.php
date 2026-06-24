@@ -9,7 +9,10 @@ use Illuminate\Support\Facades\DB;
 
 class ReturnService
 {
-    public function __construct(private InventoryService $inventory) {}
+    public function __construct(
+        private InventoryService $inventory,
+        private GlPostingService $gl,
+    ) {}
 
     public function process(ReturnRecord $return, ?User $user = null): ReturnRecord
     {
@@ -85,7 +88,15 @@ class ReturnService
                 'processed_by' => $user->id,
             ]);
 
-            return $return->fresh(['items.product', 'shop', 'warehouse', 'supplier', 'sale']);
+            $return = $return->fresh(['items.product', 'shop', 'warehouse', 'supplier', 'sale']);
+
+            if ($return->type === 'customer') {
+                $this->gl->postCustomerReturn($return, $user);
+            } else {
+                $this->gl->postSupplierReturn($return, $user);
+            }
+
+            return $return;
         });
     }
 }
