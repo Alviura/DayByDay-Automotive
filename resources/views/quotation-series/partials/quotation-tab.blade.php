@@ -70,14 +70,23 @@
                                         <p class="text-sm font-semibold text-gray-900" x-text="line.part_number"></p>
                                         <p class="text-xs text-gray-500 truncate" x-text="line.name"></p>
                                     </div>
-                                    <div class="w-24">
-                                        <input type="number"
-                                               step="0.01"
-                                               min="0.01"
-                                               :name="`items[${index}][quantity]`"
-                                               x-model.number="line.quantity"
-                                               class="mi-input w-full text-sm"
-                                               required>
+                                    <div class="qs-basket-qty-block">
+                                        <div class="qs-basket-qty-row">
+                                            <span class="qs-unit-chip"
+                                                  x-text="line.order_unit_label"
+                                                  :title="'Order quantity is in ' + line.order_unit_label.toLowerCase()"></span>
+                                            <label class="sr-only">Order quantity</label>
+                                            <input type="number"
+                                                   step="0.01"
+                                                   min="0.01"
+                                                   :name="`items[${index}][order_quantity]`"
+                                                   x-model.number="line.order_quantity"
+                                                   class="mi-input qs-basket-qty-input"
+                                                   required>
+                                        </div>
+                                        <p class="qs-basket-qty-hint"
+                                           x-show="line.units_per_supplier_unit > 1"
+                                           x-text="stockPcsLabel(line)"></p>
                                     </div>
                                     <button type="button" class="mi-action del" @click="removeFromBasket(index)" title="Remove">
                                         <i class="fas fa-times"></i>
@@ -124,9 +133,10 @@
                         <th>Product</th>
                         <th>Make / Vehicle</th>
                         <th>Unit</th>
-                        <th>Qty</th>
+                        <th>Order Qty</th>
+                        <th>Stock Pcs</th>
                         <th>Unit Price</th>
-                        @if ($series->canBulkAddItems())<th></th>@endif
+                        @if ($series->canRemoveItems())<th></th>@endif
                     </tr>
                 </thead>
                 <tbody>
@@ -143,27 +153,55 @@
                                     <span class="text-gray-300">·</span> {{ $item->product->vehicleModel->name }}
                                 @endif
                             </td>
-                            <td>{{ $item->product->unit?->abbreviation ?? $item->product->unit?->name ?? '—' }}</td>
-                            <td><span class="mi-cat-badge">{{ number_format($item->quantity, 0) }}</span></td>
-                            <td class="text-gray-400">{{ $item->hasPrice() ? number_format((float) ($item->unit_price_foreign ?? $item->unit_price), 2) : '—' }}</td>
-                            @if ($series->canBulkAddItems())
-                                <td>
+                            <td>{{ $item->product->orderUnitLabel() }}</td>
+                            <td class="qs-order-qty-cell">
+                                @if ($series->canManageQuotationItems())
                                     @can('procurement.manage')
-                                        <form action="{{ route('quotation-series.items.destroy', [$series, $item]) }}" method="POST" class="inline" data-confirm="Remove this line?" data-confirm-variant="danger">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="mi-action del" title="Remove"><i class="fas fa-trash-can"></i></button>
+                                        <form method="POST" action="{{ route('quotation-series.items.update', [$series, $item]) }}" class="qs-order-qty-form">
+                                            @csrf
+                                            @method('PATCH')
+                                            <div class="qs-order-qty-editor">
+                                                <input type="number"
+                                                       name="order_quantity"
+                                                       step="0.01"
+                                                       min="0.01"
+                                                       value="{{ old('order_quantity.'.$item->id, $item->displayOrderQuantity()) }}"
+                                                       class="mi-input qs-order-qty-input"
+                                                       required>
+                                                <button type="submit" class="qs-order-qty-save" title="Update quantity">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </div>
+                                            @if ($item->isBundledSupplierLine())
+                                                <p class="qs-order-qty-hint">{{ number_format($item->displayStockQuantity(), 0) }} stock pcs</p>
+                                            @endif
                                         </form>
                                     @endcan
-                                </td>
+                                @else
+                                    <span class="mi-cat-badge">{{ number_format($item->displayOrderQuantity(), 0) }}</span>
+                                @endif
+                            </td>
+                            <td><span class="mi-cat-badge">{{ number_format($item->displayStockQuantity(), 0) }}</span></td>
+                            <td class="text-gray-400">{{ $item->hasPrice() ? number_format((float) ($item->unit_price_foreign ?? $item->unit_price), 2) : '—' }}</td>
+                            @if ($series->canRemoveItems())
+                                <td>@include('quotation-series.partials.item-remove-button', ['item' => $item, 'series' => $series])</td>
                             @endif
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $series->canBulkAddItems() ? 8 : 7 }}">
+                            <td colspan="{{ $series->canRemoveItems() ? 9 : 8 }}">
                                 <div class="qs-empty">
                                     <div class="qs-empty-icon"><i class="fas fa-box-open"></i></div>
                                     <p class="font-semibold text-gray-600">No products in quotation yet</p>
-                                    <p class="text-sm text-gray-400 mt-1">Search and add products using the picker.</p>
+                                    @if ($series->canBulkAddItems())
+                                        @can('procurement.manage')
+                                            <p class="text-sm text-gray-400 mt-1">Search and add products using the picker{{ $series->canBulkAddItems() && ! empty($editContext) ? '' : ' on the left' }}.</p>
+                                        @else
+                                            <p class="text-sm text-gray-400 mt-1">Ask a procurement manager to add products to this quotation.</p>
+                                        @endcan
+                                    @else
+                                        <p class="text-sm text-gray-400 mt-1">This quotation can no longer be edited.</p>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -171,7 +209,7 @@
                 </tbody>
             </table>
         </div>
-        @if ($series->canProceedToOrder())
+        @if ($series->canProceedToOrder() && empty($editContext))
             @can('procurement.manage')
                 <div class="qs-action-bar">
                     <span class="text-sm text-gray-500">{{ $series->items->count() }} products ready for pricing</span>
@@ -189,6 +227,7 @@
     </div>
 </div>
 
+@if ($series->canBulkAddItems())
 @push('scripts')
 <script>
 function quotationProductPicker(config) {
@@ -239,8 +278,20 @@ function quotationProductPicker(config) {
                 product_id: product.id,
                 part_number: product.part_number,
                 name: product.name,
-                quantity: 1,
+                order_quantity: 1,
+                order_unit_label: product.order_unit_label || ({ pair: 'Pairs', set: 'Sets' }[product.supplier_sell_as] || 'PCS'),
+                units_per_supplier_unit: product.units_per_supplier_unit || 1,
             });
+        },
+
+        stockPcsLabel(line) {
+            const qty = parseFloat(line.order_quantity) || 0;
+            const mult = parseFloat(line.units_per_supplier_unit) || 1;
+            if (mult <= 1) {
+                return '';
+            }
+            const pcs = Math.round(qty * mult * 100) / 100;
+            return `= ${pcs} stock pcs`;
         },
 
         removeFromBasket(index) {
@@ -258,8 +309,8 @@ function quotationProductPicker(config) {
             }
 
             this.basket.forEach(line => {
-                if (!line.quantity || line.quantity <= 0) {
-                    line.quantity = 1;
+                if (!line.order_quantity || line.order_quantity <= 0) {
+                    line.order_quantity = 1;
                 }
             });
         },
@@ -267,3 +318,4 @@ function quotationProductPicker(config) {
 }
 </script>
 @endpush
+@endif

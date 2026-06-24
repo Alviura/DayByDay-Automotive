@@ -228,21 +228,29 @@ class SaleController extends Controller
         $products = Product::query()
             ->active()
             ->search($request->q)
-            ->with('unit:id,name,abbreviation')
+            ->with(['unit:id,name,abbreviation'])
             ->orderBy('name')
             ->limit(20)
-            ->get(['id', 'part_number', 'name', 'min_selling_price', 'max_selling_price', 'unit_id']);
+            ->get(['id', 'part_number', 'name', 'min_selling_price', 'max_selling_price', 'unit_id', 'supplier_sell_as', 'units_per_supplier_unit']);
 
         return response()->json(
-            $products->map(fn (Product $product) => [
-                'id' => $product->id,
-                'part_number' => $product->part_number,
-                'name' => $product->name,
-                'min_selling_price' => (float) $product->min_selling_price,
-                'max_selling_price' => (float) $product->max_selling_price,
-                'available' => $this->inventory->available($product, $shop),
-                'unit' => $product->unit?->abbreviation,
-            ])
+            $products->map(function (Product $product) use ($shop) {
+                $stockAvailable = $this->inventory->available($product, $shop);
+
+                return [
+                    'id' => $product->id,
+                    'part_number' => $product->part_number,
+                    'name' => $product->name,
+                    'min_selling_price' => (float) $product->min_selling_price,
+                    'max_selling_price' => (float) $product->max_selling_price,
+                    'available' => $stockAvailable,
+                    'available_sell_units' => $product->maxSaleQuantityFromStock($stockAvailable),
+                    'unit' => $product->unit?->abbreviation,
+                    'order_unit_label' => $product->orderUnitLabel(),
+                    'units_per_sell_unit' => $product->unitsPerSupplierUnit(),
+                    'is_bundled' => $product->isSoldAsBundle(),
+                ];
+            })
         );
     }
 

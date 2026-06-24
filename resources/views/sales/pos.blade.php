@@ -14,8 +14,12 @@
                 'name' => $i->product->name,
                 'quantity' => (float) $i->quantity,
                 'unit_price' => (float) $i->unit_price,
+                'min_selling_price' => (float) $i->product->min_selling_price,
+                'max_selling_price' => (float) $i->product->max_selling_price,
                 'available' => null,
-                'unit' => $i->product->unit?->abbreviation,
+                'order_unit_label' => $i->product->orderUnitLabel(),
+                'is_bundled' => $i->product->isSoldAsBundle(),
+                'units_per_sell_unit' => $i->product->unitsPerSupplierUnit(),
             ])->values() : []),
             customerName: @js($resumeSale?->customer_name ?? ''),
             customerPhone: @js($resumeSale?->customer_phone ?? ''),
@@ -58,7 +62,7 @@
                                 <p class="text-xs text-gray-500 truncate" x-text="product.name"></p>
                                 <div class="flex justify-between mt-1 text-xs">
                                     <span class="text-orange-600 font-semibold" x-text="formatPriceRange(product)"></span>
-                                    <span class="text-gray-400" x-text="product.available + ' avail'"></span>
+                                    <span class="text-gray-400" x-text="availLabel(product)"></span>
                                 </div>
                             </button>
                         </template>
@@ -106,7 +110,21 @@
                                             <p class="font-medium text-sm" x-text="line.part_number"></p>
                                             <p class="text-xs text-gray-500" x-text="line.name"></p>
                                         </td>
-                                        <td><input type="number" step="0.01" min="0.01" class="mi-input w-20" x-model.number="line.quantity" @change="recalc()"></td>
+                                        <td>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-[0.65rem] font-bold uppercase text-orange-600 shrink-0"
+                                                      x-text="line.order_unit_label || 'PCS'"></span>
+                                                <input type="number"
+                                                       :step="line.is_bundled ? 1 : 0.01"
+                                                       :min="line.is_bundled ? 1 : 0.01"
+                                                       class="mi-input w-20"
+                                                       x-model.number="line.quantity"
+                                                       @change="normalizeQty(line); recalc()">
+                                            </div>
+                                            <p class="text-[0.62rem] text-gray-400 mt-0.5"
+                                               x-show="line.is_bundled && line.units_per_sell_unit > 1"
+                                               x-text="stockPcsHint(line)"></p>
+                                        </td>
                                         <td><input type="number" step="0.01" min="0" class="mi-input w-24" x-model.number="line.unit_price" @change="recalc()"></td>
                                         <td class="font-medium" x-text="formatMoney(lineTotal(line))"></td>
                                         <td><button type="button" @click="removeLine(index)" class="mi-action del"><i class="fas fa-trash"></i></button></td>
@@ -266,12 +284,35 @@
                             min_selling_price: parseFloat(product.min_selling_price),
                             max_selling_price: parseFloat(product.max_selling_price),
                             available: product.available,
-                            unit: product.unit,
+                            available_sell_units: product.available_sell_units,
+                            order_unit_label: product.order_unit_label || 'PCS',
+                            is_bundled: !!product.is_bundled,
+                            units_per_sell_unit: product.units_per_sell_unit || 1,
                         });
                     }
                     this.recalc();
                     this.query = '';
                     this.results = [];
+                },
+
+                availLabel(product) {
+                    if (product.is_bundled) {
+                        const units = Math.floor(product.available_sell_units || 0);
+                        return units + ' ' + (product.order_unit_label || 'PCS').toLowerCase() + ' avail';
+                    }
+                    return (product.available || 0) + ' avail';
+                },
+
+                stockPcsHint(line) {
+                    const qty = parseFloat(line.quantity) || 0;
+                    const mult = parseFloat(line.units_per_sell_unit) || 1;
+                    return '= ' + Math.round(qty * mult) + ' stock pcs';
+                },
+
+                normalizeQty(line) {
+                    if (! line.is_bundled) return;
+                    const qty = Math.max(1, Math.round(parseFloat(line.quantity) || 1));
+                    line.quantity = qty;
                 },
 
                 removeLine(index) {

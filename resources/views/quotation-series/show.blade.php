@@ -52,6 +52,9 @@
                 @if ($series->canEditHeader())
                     @can('procurement.manage')
                         <a href="{{ route('quotation-series.edit', $series) }}" class="mi-btn-ghost"><i class="fas fa-pen text-xs"></i> Edit</a>
+                        @if ($series->canManageQuotationItems())
+                            <a href="{{ route('quotation-series.edit', $series) }}?tab=quotation" class="mi-btn-ghost"><i class="fas fa-list text-xs"></i> Edit Lines</a>
+                        @endif
                     @endcan
                 @endif
             </div>
@@ -136,13 +139,18 @@
         </div>
 
         <div x-show="tab === 'quotation'" x-cloak class="space-y-4">
-            <div class="qs-phase-banner qs-phase-banner-violet">
+            <div class="qs-phase-banner {{ $series->status === 'order_draft' ? 'qs-phase-banner-amber' : 'qs-phase-banner-violet' }}">
                 <i class="fas fa-lightbulb"></i>
                 <div>
-                    <strong>Phase 2 — Quotation Draft.</strong>
-                    Bulk-select products and quantities, then export a blank-price draft to send your supplier.
-                    @if ($series->canProceedToOrder())
-                        When ready, click <strong>Start Order Processing</strong> at the bottom.
+                    @if ($series->status === 'order_draft')
+                        <strong>Order draft — quotation lines.</strong>
+                        You can still add or remove products here. Changes clear calculated margins on the Order tab.
+                    @else
+                        <strong>Phase 2 — Quotation Draft.</strong>
+                        Bulk-select products and quantities, then export a blank-price draft to send your supplier.
+                        @if ($series->canProceedToOrder())
+                            When ready, click <strong>Start Order Processing</strong> at the bottom.
+                        @endif
                     @endif
                 </div>
             </div>

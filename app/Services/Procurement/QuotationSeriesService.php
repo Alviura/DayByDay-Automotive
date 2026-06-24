@@ -7,6 +7,8 @@ use App\Models\QuotationItem;
 use App\Models\QuotationSeries;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\Procurement\ImportOrderCalculator;
+use App\Services\Procurement\QuotationQuantityResolver;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -42,23 +44,92 @@ class QuotationSeriesService
         DB::transaction(function () use ($series, $lines) {
             foreach ($lines as $line) {
                 $productId = (int) $line['product_id'];
-                $quantity = (float) $line['quantity'];
+                $product = Product::find($productId);
 
-                if ($quantity <= 0) {
+                if (! $product) {
                     continue;
                 }
+
+                $orderQuantity = (float) ($line['order_quantity'] ?? $line['quantity'] ?? 0);
+
+                if ($orderQuantity <= 0) {
+                    continue;
+                }
+
+                $stockQuantity = $product->stockQuantityFromOrder($orderQuantity);
+                $packaging = $product->packagingDefaults();
 
                 $existing = $series->items()->where('product_id', $productId)->first();
 
                 if ($existing) {
-                    $existing->update(['quantity' => $quantity]);
+                    $existing->update([
+                        'order_quantity' => $orderQuantity,
+                        'quantity' => $stockQuantity,
+                    ]);
                 } else {
                     QuotationItem::create([
                         'quotation_series_id' => $series->id,
                         'product_id' => $productId,
-                        'quantity' => $quantity,
+                        'order_quantity' => $orderQuantity,
+                        'quantity' => $stockQuantity,
+                        'width' => $packaging['width'],
+                        'length' => $packaging['length'],
+                        'height' => $packaging['height'],
+                        'quantity_per_packet' => $packaging['quantity_per_packet'],
                     ]);
                 }
+            }
+            if ($series->status === 'order_draft') {
+                $this->clearCalculationState($series->fresh());
+            }
+        });
+    }
+
+    public function removeItem(QuotationSeries $series, QuotationItem $item): void
+    {
+        if ($item->quotation_series_id !== $series->id || ! $series->canRemoveItems()) {
+            throw new InvalidArgumentException('Cannot remove this item.');
+        }
+
+        DB::transaction(function () use ($series, $item) {
+            $item->delete();
+            $series->refresh();
+
+            if (! $series->items()->exists() && $series->status === 'order_draft') {
+                $series->update(['status' => 'quotation_draft']);
+            }
+
+            if ($series->status === 'order_draft') {
+                $this->clearCalculationState($series->fresh());
+            }
+        });
+    }
+
+    public function updateItemOrderQuantity(QuotationSeries $series, QuotationItem $item, float $orderQuantity): void
+    {
+        if ($item->quotation_series_id !== $series->id || ! $series->canManageQuotationItems()) {
+            throw new InvalidArgumentException('Cannot update this item.');
+        }
+
+        if ($orderQuantity <= 0) {
+            throw new InvalidArgumentException('Quantity must be greater than zero.');
+        }
+
+        $item->loadMissing('product');
+        $product = $item->product;
+
+        if (! $product) {
+            throw new InvalidArgumentException('Product not found for this line.');
+        }
+
+        DB::transaction(function () use ($series, $item, $orderQuantity, $product) {
+            $item->update([
+                'order_quantity' => $orderQuantity,
+                'quantity' => $product->stockQuantityFromOrder($orderQuantity),
+            ]);
+
+            if ($series->status === 'order_draft') {
+                $this->clearCalculationState($series->fresh());
             }
         });
     }
@@ -93,9 +164,10 @@ class QuotationSeriesService
                 $marketWholesale = $this->resolveMarketWholesaleForSave($item, $line);
 
                 if ($series->isImport()) {
-                    $quantity = (float) $item->quantity;
+                    $item->loadMissing('product');
+                    $stockQuantity = QuotationQuantityResolver::stockQuantity($item, $item->product);
                     $qtyPerPacket = max(0.01, (float) ($line['quantity_per_packet'] ?? 1));
-                    $derivedPackets = ImportOrderCalculator::deriveNumberOfPackets($quantity, $qtyPerPacket);
+                    $derivedPackets = ImportOrderCalculator::deriveNumberOfPackets($stockQuantity, $qtyPerPacket);
                     $override = filter_var($line['packets_override'] ?? false, FILTER_VALIDATE_BOOLEAN);
                     $numberOfPackets = $override
                         ? round((float) ($line['number_of_packets'] ?? $derivedPackets), 2)
@@ -131,6 +203,7 @@ class QuotationSeriesService
             'cbm_per_packet' => null,
             'total_cbm' => null,
             'transport_per_unit' => null,
+            'transport_per_packet' => null,
             'unit_cost_arrival' => null,
             'cost_per_unit' => 0,
             'margin_amount' => null,
@@ -184,14 +257,19 @@ class QuotationSeriesService
 
         foreach ($series->items as $item) {
             $product = $item->product;
+            $orderQty = QuotationQuantityResolver::orderQuantity($item, $product);
+            $stockQty = QuotationQuantityResolver::stockQuantity($item, $product);
             $rows[] = [
                 'ns' => $index++,
                 'part_number' => $product->part_number,
                 'product_name' => $product->productName?->name ?? $product->name,
                 'make' => $product->vehicleMake?->name ?? '',
                 'vehicle' => $product->vehicleModel?->name ?? '',
-                'unit' => $product->unit?->abbreviation ?? $product->unit?->name ?? '',
-                'quantity' => (float) $item->quantity,
+                'unit' => $product->isBundledSupplierUnit()
+                    ? $product->supplierSellAsLabel()
+                    : ($product->unit?->abbreviation ?? $product->unit?->name ?? ''),
+                'quantity' => $orderQty,
+                'stock_quantity' => $stockQty,
                 'unit_price' => $item->unit_price ? number_format((float) $item->unit_price, 2) : '—',
             ];
         }

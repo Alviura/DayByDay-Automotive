@@ -105,9 +105,10 @@ Route::middleware('auth')->group(function () {
     Route::resource('quotation-series', QuotationSeriesController::class);
     Route::get('quotation-series/{quotation_series}/products/search', [QuotationSeriesController::class, 'searchProducts'])->name('quotation-series.products.search');
     Route::post('quotation-series/{quotation_series}/items/bulk', [QuotationSeriesController::class, 'bulkAddItems'])->name('quotation-series.items.bulk');
-    Route::delete('quotation-series/{quotation_series}/items/{item}', [QuotationSeriesController::class, 'destroyItem'])->name('quotation-series.items.destroy');
-    Route::post('quotation-series/{quotation_series}/proceed', [QuotationSeriesController::class, 'proceedToOrder'])->name('quotation-series.proceed');
     Route::patch('quotation-series/{quotation_series}/items/prices', [QuotationSeriesController::class, 'updatePrices'])->name('quotation-series.items.prices');
+    Route::delete('quotation-series/{quotation_series}/items/{item}', [QuotationSeriesController::class, 'destroyItem'])->name('quotation-series.items.destroy');
+    Route::patch('quotation-series/{quotation_series}/items/{item}', [QuotationSeriesController::class, 'updateItem'])->name('quotation-series.items.update');
+    Route::post('quotation-series/{quotation_series}/proceed', [QuotationSeriesController::class, 'proceedToOrder'])->name('quotation-series.proceed');
     Route::post('quotation-series/{quotation_series}/calculate', [QuotationSeriesController::class, 'calculate'])->name('quotation-series.calculate');
     Route::post('quotation-series/{quotation_series}/confirm', [QuotationSeriesController::class, 'confirmOrder'])->name('quotation-series.confirm');
     Route::get('quotation-series/{quotation_series}/export/{format}', [QuotationSeriesController::class, 'export'])->name('quotation-series.export');

@@ -37,6 +37,12 @@ class UpdateProductRequest extends FormRequest
             'min_selling_price' => ['nullable', 'numeric', 'min:0'],
             'max_selling_price' => ['nullable', 'numeric', 'min:0', 'gte:min_selling_price'],
             'reorder_level' => ['nullable', 'integer', 'min:0'],
+            'width' => ['nullable', 'numeric', 'gt:0', 'required_with:length,height'],
+            'length' => ['nullable', 'numeric', 'gt:0', 'required_with:width,height'],
+            'height' => ['nullable', 'numeric', 'gt:0', 'required_with:width,length'],
+            'quantity_per_packet' => ['nullable', 'numeric', 'min:0.01'],
+            'supplier_sell_as' => ['nullable', 'string', 'in:piece,pair,set'],
+            'units_per_supplier_unit' => ['nullable', 'numeric', 'min:1'],
             'description' => ['nullable', 'string', 'max:2000'],
             'is_active' => ['boolean'],
             'vehicle_model_ids' => ['nullable', 'array'],
@@ -56,5 +62,14 @@ class UpdateProductRequest extends FormRequest
                 $this->merge(['name' => $productName->name]);
             }
         }
+
+        $this->merge([
+            'width' => $this->filled('width') ? $this->width : null,
+            'length' => $this->filled('length') ? $this->length : null,
+            'height' => $this->filled('height') ? $this->height : null,
+            'quantity_per_packet' => $this->filled('quantity_per_packet') ? $this->quantity_per_packet : 1,
+            'supplier_sell_as' => $this->input('supplier_sell_as', 'piece'),
+            'units_per_supplier_unit' => $this->filled('units_per_supplier_unit') ? $this->units_per_supplier_unit : 1,
+        ]);
     }
 }

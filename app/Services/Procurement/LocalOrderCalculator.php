@@ -10,20 +10,23 @@ class LocalOrderCalculator
 {
     public function calculateLine(QuotationItem $item, Product $product): QuotationItem
     {
-        $quantity = (float) $item->quantity;
+        $orderQuantity = QuotationQuantityResolver::orderQuantity($item, $product);
+        $stockQuantity = QuotationQuantityResolver::stockQuantity($item, $product);
         $unitPrice = (float) $item->unit_price;
         $transport = (float) ($item->transport ?? 0);
         $wholesale = $item->resolveMarketWholesalePrice($product);
 
-        $totalPurchase = $unitPrice * $quantity;
+        $totalPurchase = $unitPrice * $orderQuantity;
         $actualTotalCost = $totalPurchase + $transport;
-        $unitCostArrival = $quantity > 0 ? $actualTotalCost / $quantity : 0;
+        $unitCostArrival = $stockQuantity > 0 ? $actualTotalCost / $stockQuantity : 0;
         $marginAmount = $wholesale - $unitCostArrival;
         $marginPercent = $wholesale > 0 ? ($marginAmount / $wholesale) * 100 : 0;
-        $expectedSales = $wholesale * $quantity;
-        $expectedMargin = $marginAmount * $quantity;
+        $expectedSales = $wholesale * $stockQuantity;
+        $expectedMargin = $marginAmount * $stockQuantity;
 
         $item->fill([
+            'order_quantity' => round($orderQuantity, 2),
+            'quantity' => $stockQuantity,
             'market_wholesale_price' => round($wholesale, 2),
             'total_purchase_price' => round($totalPurchase, 2),
             'transport' => round($transport, 2),

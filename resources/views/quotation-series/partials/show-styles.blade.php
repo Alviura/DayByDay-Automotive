@@ -269,6 +269,107 @@
     }
     .qs-basket-row:last-child { border-bottom: none; }
 
+    .qs-unit-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2.75rem;
+        padding: .2rem .45rem;
+        border-radius: .375rem;
+        background: #fff7ed;
+        color: #c2410c;
+        font-size: .62rem;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        flex-shrink: 0;
+    }
+    .qs-basket-qty-block {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: .2rem;
+        flex-shrink: 0;
+        min-width: 9.5rem;
+    }
+    .qs-basket-qty-row {
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+        padding: .2rem;
+        border-radius: .5rem;
+        border: 1px solid #e5e7eb;
+        background: #fafafa;
+    }
+    .qs-basket-qty-input {
+        width: 4.5rem !important;
+        min-width: 4.5rem;
+        text-align: center;
+        font-weight: 600;
+        padding-top: .35rem !important;
+        padding-bottom: .35rem !important;
+    }
+    .qs-basket-qty-hint,
+    .qs-order-qty-hint {
+        font-size: .62rem;
+        color: #9ca3af;
+        line-height: 1.2;
+        margin: 0;
+        text-align: right;
+    }
+    .qs-order-qty-cell {
+        min-width: 9.5rem;
+        vertical-align: middle;
+    }
+    .qs-order-qty-form {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: .2rem;
+    }
+    .qs-order-qty-editor {
+        display: inline-flex;
+        align-items: stretch;
+        gap: 0;
+        border-radius: .5rem;
+        border: 1px solid #e5e7eb;
+        background: #fafafa;
+        overflow: hidden;
+    }
+    .qs-order-qty-input {
+        width: 5rem !important;
+        min-width: 5rem;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        text-align: center;
+        font-weight: 600;
+        background: transparent !important;
+        padding: .45rem .5rem !important;
+    }
+    .qs-order-qty-input:focus {
+        outline: none;
+        background: #fff !important;
+    }
+    .qs-order-qty-save {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        flex-shrink: 0;
+        border: none;
+        border-left: 1px solid #e5e7eb;
+        background: #fff;
+        color: #16a34a;
+        cursor: pointer;
+        font-size: .8rem;
+        transition: background .12s, color .12s;
+    }
+    .qs-order-qty-save:hover {
+        background: #f0fdf4;
+        color: #15803d;
+    }
+
     .qs-summary-locked {
         border-top: 1px solid #f3f4f6;
         background: #fafafa;
@@ -338,6 +439,63 @@
     }
 
     .qs-order-input { min-width: 5rem; }
+
+    .qs-prices-table-wrap {
+        padding: 0 .25rem .5rem;
+    }
+    .qs-prices-table td,
+    .qs-prices-table th {
+        vertical-align: middle;
+    }
+    .qs-prices-table tbody td {
+        padding-top: .55rem;
+        padding-bottom: .55rem;
+    }
+    .qs-dimension-cell {
+        white-space: nowrap;
+    }
+    .qs-dimension-cell .qs-dimension-input {
+        display: inline-block;
+        vertical-align: middle;
+    }
+    .qs-dimension-input {
+        width: 5.25rem !important;
+        min-width: 5.25rem;
+        max-width: 5.25rem;
+        text-align: center;
+        font-size: .875rem;
+        font-weight: 500;
+        padding: .45rem .35rem !important;
+    }
+    .qs-dimension-sep {
+        display: inline-block;
+        vertical-align: middle;
+        margin: 0 .35rem;
+        color: #9ca3af;
+        font-size: .8rem;
+        line-height: 1;
+        user-select: none;
+    }
+
+    .qs-negative-margin-banner {
+        margin: 1rem 1rem 1.5rem;
+        padding: .85rem 1rem;
+        border-radius: .5rem;
+        border: 1px solid #fecaca;
+        background: #fef2f2;
+        font-size: .875rem;
+        color: #7f1d1d;
+    }
+    .qs-summary-table-wrap {
+        padding: 0 .25rem .5rem;
+    }
+    .qs-negative-margin-banner + .qs-summary-table-wrap {
+        padding-top: .35rem;
+    }
+    .qs-summary-table-wrap .mi-table thead th {
+        padding-top: .85rem;
+    }
+
     .qs-summary-scroll { max-height: none; }
     @media (min-width: 1280px) {
         .qs-summary-scroll { max-height: 520px; overflow: auto; }

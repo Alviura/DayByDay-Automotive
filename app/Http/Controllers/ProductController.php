@@ -5,9 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Models\Category;
+use App\Enums\SupplierSellAs;
 use App\Models\Product;
-use App\Models\ProductName;
 use App\Models\Unit;
+use App\Models\ProductName;
 use App\Models\VehicleMake;
 use App\Services\InventoryService;
 use Illuminate\Http\JsonResponse;
@@ -155,7 +156,7 @@ class ProductController extends Controller
 
     private function productAttributes(StoreProductRequest|UpdateProductRequest $request): array
     {
-        return [
+        $attrs = [
             'part_number' => strtoupper(trim($request->part_number)),
             'name' => $request->name,
             'product_name_id' => $request->product_name_id,
@@ -167,9 +168,39 @@ class ProductController extends Controller
             'min_selling_price' => $request->min_selling_price ?? 0,
             'max_selling_price' => $request->max_selling_price ?? 0,
             'reorder_level' => $request->reorder_level ?? 0,
+            'width' => $request->width,
+            'length' => $request->length,
+            'height' => $request->height,
+            'quantity_per_packet' => $request->quantity_per_packet ?? 1,
+            'supplier_sell_as' => $request->supplier_sell_as ?? 'piece',
+            'units_per_supplier_unit' => $request->units_per_supplier_unit ?? 1,
             'description' => $request->description,
             'is_active' => $request->boolean('is_active'),
         ];
+
+        return $this->syncSellUnitAttributes($attrs);
+    }
+
+    private function syncSellUnitAttributes(array $attrs): array
+    {
+        $unit = ! empty($attrs['unit_id']) ? Unit::find($attrs['unit_id']) : null;
+        $sellAs = $unit?->supplierSellAs();
+
+        if ($sellAs) {
+            $attrs['supplier_sell_as'] = $sellAs->value;
+            $pieces = (float) ($attrs['units_per_supplier_unit'] ?? 0);
+
+            if ($sellAs === SupplierSellAs::Pair) {
+                $attrs['units_per_supplier_unit'] = 2;
+            } elseif ($pieces < 1) {
+                $attrs['units_per_supplier_unit'] = $sellAs->defaultUnitsPerUnit();
+            }
+        } else {
+            $attrs['supplier_sell_as'] = $attrs['supplier_sell_as'] ?? SupplierSellAs::Piece->value;
+            $attrs['units_per_supplier_unit'] = max(1, (float) ($attrs['units_per_supplier_unit'] ?? 1));
+        }
+
+        return $attrs;
     }
 
     private function syncFitment(Product $product, StoreProductRequest|UpdateProductRequest $request): void

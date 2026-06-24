@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\BulkQuotationItemsRequest;
 use App\Http\Requests\StoreQuotationSeriesRequest;
 use App\Http\Requests\UpdateQuotationPricesRequest;
+use App\Http\Requests\UpdateQuotationItemQuantityRequest;
 use App\Http\Requests\UpdateQuotationSeriesRequest;
 use App\Models\Product;
 use App\Models\QuotationItem;
@@ -30,7 +31,7 @@ class QuotationSeriesController extends Controller
         $this->middleware('permission:procurement.view')->only(['index', 'show', 'export']);
         $this->middleware('permission:procurement.manage')->only([
             'create', 'store', 'edit', 'update', 'destroy',
-            'searchProducts', 'bulkAddItems', 'destroyItem', 'proceedToOrder',
+            'searchProducts', 'bulkAddItems', 'destroyItem', 'updateItem', 'proceedToOrder',
             'updatePrices', 'calculate', 'confirmOrder',
             'generatePo', 'markInTransit', 'close',
         ]);
@@ -188,7 +189,7 @@ class QuotationSeriesController extends Controller
             ->with(['productName:id,name', 'vehicleMake:id,name', 'vehicleModel:id,name', 'unit:id,name,abbreviation'])
             ->orderBy('part_number')
             ->limit(25)
-            ->get(['id', 'part_number', 'name', 'product_name_id', 'vehicle_make_id', 'vehicle_model_id', 'unit_id']);
+            ->get(['id', 'part_number', 'name', 'product_name_id', 'vehicle_make_id', 'vehicle_model_id', 'unit_id', 'supplier_sell_as', 'units_per_supplier_unit']);
 
         return response()->json(
             $products->map(fn (Product $product) => [
@@ -198,6 +199,12 @@ class QuotationSeriesController extends Controller
                 'make' => $product->vehicleMake?->name ?? '',
                 'vehicle' => $product->vehicleModel?->name ?? '',
                 'unit' => $product->unit?->abbreviation ?? $product->unit?->name ?? '',
+                'supplier_sell_as' => $product->supplier_sell_as?->value ?? 'piece',
+                'supplier_sell_label' => $product->supplierSellAsLabel(),
+                'supplier_qty_label' => $product->supplierQuantityLabel(),
+                'order_unit_label' => $product->orderUnitLabel(),
+                'units_per_supplier_unit' => (float) $product->unitsPerSupplierUnit(),
+                'is_bundled' => $product->isBundledSupplierUnit(),
             ])->values()
         );
     }
@@ -208,6 +215,14 @@ class QuotationSeriesController extends Controller
             return redirect()->route('quotation-series.show', $quotationSeries)
                 ->with('error', 'This quotation series cannot be edited.');
         }
+
+        $quotationSeries->load([
+            'items.product.unit',
+            'items.product.productName',
+            'items.product.vehicleMake',
+            'items.product.vehicleModel',
+            'supplier',
+        ]);
 
         $suppliers = Supplier::active()->orderBy('name')->get();
 
@@ -269,13 +284,41 @@ class QuotationSeriesController extends Controller
 
     public function destroyItem(QuotationSeries $quotationSeries, QuotationItem $item): RedirectResponse
     {
-        if ($item->quotation_series_id !== $quotationSeries->id || ! $quotationSeries->canBulkAddItems()) {
-            return back()->with('error', 'Cannot remove this item.');
+        try {
+            $this->seriesService->removeItem($quotationSeries, $item);
+            $quotationSeries->refresh();
+
+            if ($quotationSeries->items->isEmpty()) {
+                $message = 'All lines removed. Add products to continue building the quotation.';
+            } elseif ($quotationSeries->status === 'order_draft') {
+                $message = 'Line removed. Recalculate margins after updating the remaining lines.';
+            } else {
+                $message = 'Line item removed.';
+            }
+
+            return back()->with('status', $message);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
         }
+    }
 
-        $item->delete();
+    public function updateItem(UpdateQuotationItemQuantityRequest $request, QuotationSeries $quotationSeries, QuotationItem $item): RedirectResponse
+    {
+        try {
+            $this->seriesService->updateItemOrderQuantity(
+                $quotationSeries,
+                $item,
+                (float) $request->validated('order_quantity')
+            );
 
-        return back()->with('status', 'Line item removed.');
+            $message = $quotationSeries->status === 'order_draft'
+                ? 'Line quantity updated. Save prices and recalculate margins if needed.'
+                : 'Line quantity updated.';
+
+            return back()->with('status', $message);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 
     public function proceedToOrder(QuotationSeries $quotationSeries): RedirectResponse

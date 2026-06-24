@@ -124,7 +124,40 @@
         </div>
     </div>
 
-    <div class="mi-form-grid">
+    @php
+        $unitSellMeta = $units->mapWithKeys(fn ($unit) => [
+            $unit->id => [
+                'sell_as' => $unit->supplierSellAs()?->value,
+                'default_pieces' => $unit->supplierSellAs()?->defaultUnitsPerUnit() ?? 1,
+            ],
+        ]);
+    @endphp
+
+    <div
+        x-data="{
+            unitId: @js((string) old('unit_id', $product?->unit_id ?? '')),
+            piecesPerUnit: @js((float) old('units_per_supplier_unit', $product?->units_per_supplier_unit ?? 1)),
+            unitMeta: @js($unitSellMeta),
+            get sellAs() {
+                const meta = this.unitMeta[this.unitId];
+                return meta?.sell_as || 'piece';
+            },
+            get piecesLabel() {
+                if (this.sellAs === 'pair') return 'Pieces per pair';
+                if (this.sellAs === 'set') return 'Pieces per set';
+                return 'Stock pieces per unit';
+            },
+            onUnitChange() {
+                const meta = this.unitMeta[this.unitId];
+                if (! meta?.sell_as) {
+                    this.piecesPerUnit = 1;
+                    return;
+                }
+                this.piecesPerUnit = meta.default_pieces;
+            }
+        }"
+        class="mi-form-grid"
+    >
         <div>
             <label for="category_id" class="mi-field-label">
                 <i class="fas fa-folder-tree"></i> Category
@@ -144,7 +177,7 @@
             <label for="unit_id" class="mi-field-label">
                 <i class="fas fa-ruler-combined"></i> Unit of Measure
             </label>
-            <select id="unit_id" name="unit_id" class="mi-select">
+            <select id="unit_id" name="unit_id" class="mi-select" x-model="unitId" @change="onUnitChange()">
                 <option value="">— None —</option>
                 @foreach ($units as $unit)
                     <option value="{{ $unit->id }}" @selected(old('unit_id', $product?->unit_id ?? '') == $unit->id)>
@@ -152,7 +185,94 @@
                     </option>
                 @endforeach
             </select>
+            <p class="mi-field-hint">How this item is stocked, ordered, and sold (piece, pair, or set).</p>
             <x-input-error :messages="$errors->get('unit_id')" class="mt-1.5" />
+        </div>
+
+        <div x-show="sellAs !== 'piece'" x-cloak>
+            <label for="units_per_supplier_unit" class="mi-field-label text-gray-500">
+                <span x-text="piecesLabel"></span>
+            </label>
+            <x-text-input id="units_per_supplier_unit" type="number" min="1" step="1"
+                          class="mi-input block w-full" x-model.number="piecesPerUnit"
+                          x-bind:readonly="sellAs === 'pair'" />
+            <p class="mi-field-hint" x-show="sellAs === 'pair'">Pairs always contain 2 stock pieces.</p>
+            <p class="mi-field-hint" x-show="sellAs === 'set'">How many stock pieces are in one set (e.g. 4 for brake pads).</p>
+            <x-input-error :messages="$errors->get('units_per_supplier_unit')" class="mt-1.5" />
+        </div>
+
+        <input type="hidden" name="supplier_sell_as" x-bind:value="sellAs">
+        <input type="hidden" name="units_per_supplier_unit" x-bind:value="sellAs === 'piece' ? 1 : piecesPerUnit">
+    </div>
+
+    <div
+        x-data="{
+            width: @js(old('width', $product?->width ?? '') !== '' && old('width', $product?->width) !== null ? (string) old('width', $product?->width) : ''),
+            length: @js(old('length', $product?->length ?? '') !== '' && old('length', $product?->length) !== null ? (string) old('length', $product?->length) : ''),
+            height: @js(old('height', $product?->height ?? '') !== '' && old('height', $product?->height) !== null ? (string) old('height', $product?->height) : ''),
+            qtyPerPacket: @js(old('quantity_per_packet', $product?->quantity_per_packet ?? 1)),
+            get cbmPerPacket() {
+                const w = parseFloat(this.width) || 0;
+                const l = parseFloat(this.length) || 0;
+                const h = parseFloat(this.height) || 0;
+                if (!w || !l || !h) return null;
+                return (w * l * h).toFixed(6);
+            },
+            get hasDimensions() {
+                return this.cbmPerPacket !== null;
+            }
+        }"
+        class="rounded-lg border border-sky-200 bg-sky-50/50 p-4 space-y-4"
+    >
+        <div>
+            <p class="mi-field-label mb-1">
+                <i class="fas fa-ruler"></i> Packaging &amp; CBM (import freight)
+            </p>
+            <p class="mi-field-hint">
+                Measure the <strong>shipping packet</strong> with calipers/ruler (metres).
+                Qty per packet = stock pieces in one measured box (usually matches pieces per pair/set).
+                Import freight is charged <strong>per packet</strong> for pairs/sets.
+            </p>
+        </div>
+
+        <div class="mi-form-grid">
+            <div>
+                <label for="width" class="mi-field-label text-gray-500">Width (m)</label>
+                <x-text-input id="width" name="width" type="number" min="0" step="0.0001"
+                              class="mi-input block w-full" x-model="width" placeholder="e.g. 0.45" />
+                <x-input-error :messages="$errors->get('width')" class="mt-1.5" />
+            </div>
+            <div>
+                <label for="length" class="mi-field-label text-gray-500">Length (m)</label>
+                <x-text-input id="length" name="length" type="number" min="0" step="0.0001"
+                              class="mi-input block w-full" x-model="length" placeholder="e.g. 0.02" />
+                <x-input-error :messages="$errors->get('length')" class="mt-1.5" />
+            </div>
+            <div>
+                <label for="height" class="mi-field-label text-gray-500">Height (m)</label>
+                <x-text-input id="height" name="height" type="number" min="0" step="0.0001"
+                              class="mi-input block w-full" x-model="height" placeholder="e.g. 0.12" />
+                <x-input-error :messages="$errors->get('height')" class="mt-1.5" />
+            </div>
+            <div>
+                <label for="quantity_per_packet" class="mi-field-label text-gray-500">Qty per packet</label>
+                <x-text-input id="quantity_per_packet" name="quantity_per_packet" type="number" min="0.01" step="0.01"
+                              class="mi-input block w-full" x-model.number="qtyPerPacket" />
+                <p class="mi-field-hint">Units inside one measured pack (e.g. 2 for a wiper pair).</p>
+                <x-input-error :messages="$errors->get('quantity_per_packet')" class="mt-1.5" />
+            </div>
+        </div>
+
+        <div x-show="hasDimensions" x-cloak class="flex flex-wrap items-center gap-3 rounded-lg border border-sky-200 bg-white px-3 py-2.5 text-sm">
+            <span class="font-semibold text-sky-800">
+                <i class="fas fa-cube text-sky-500 mr-1"></i>
+                CBM per packet:
+            </span>
+            <span class="font-mono font-bold text-sky-900" x-text="cbmPerPacket"></span>
+            <span class="text-gray-400">m³</span>
+            <span class="text-gray-500 text-xs" x-show="qtyPerPacket > 1" x-cloak>
+                · <span x-text="qtyPerPacket"></span> stock pieces per CBM packet
+            </span>
         </div>
     </div>
 

@@ -176,9 +176,7 @@
                                     </td>
                                     <td class="font-semibold text-gray-700">
                                         {{ number_format($item->quantity, $item->quantity == floor($item->quantity) ? 0 : 2) }}
-                                        @if ($item->product->unit)
-                                            <span class="text-xs text-gray-400 font-normal">{{ $item->product->unit->abbreviation ?? $item->product->unit->name }}</span>
-                                        @endif
+                                        <span class="text-xs text-gray-400 font-normal">{{ $item->product->orderUnitLabel() }}</span>
                                     </td>
                                     <td class="text-sm text-gray-600">{{ number_format($item->unit_price, 2) }}</td>
                                     <td class="font-bold text-orange-700">{{ number_format($item->line_total, 2) }}</td>

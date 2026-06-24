@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Procurement\QuotationQuantityResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -13,6 +14,7 @@ class QuotationItem extends Model
         'quotation_series_id',
         'product_id',
         'quantity',
+        'order_quantity',
         'unit_price',
         'unit_price_foreign',
         'unit_price_ksh',
@@ -25,6 +27,7 @@ class QuotationItem extends Model
         'cbm_per_packet',
         'total_cbm',
         'transport_per_unit',
+        'transport_per_packet',
         'unit_cost_arrival',
         'market_wholesale_price',
         'margin_amount',
@@ -46,6 +49,7 @@ class QuotationItem extends Model
 
     protected $casts = [
         'quantity' => 'decimal:2',
+        'order_quantity' => 'decimal:2',
         'unit_price' => 'decimal:4',
         'unit_price_foreign' => 'decimal:4',
         'unit_price_ksh' => 'decimal:2',
@@ -58,6 +62,7 @@ class QuotationItem extends Model
         'cbm_per_packet' => 'decimal:6',
         'total_cbm' => 'decimal:4',
         'transport_per_unit' => 'decimal:2',
+        'transport_per_packet' => 'decimal:2',
         'unit_cost_arrival' => 'decimal:2',
         'market_wholesale_price' => 'decimal:2',
         'margin_amount' => 'decimal:2',
@@ -102,5 +107,33 @@ class QuotationItem extends Model
         $product ??= $this->product;
 
         return (float) ($this->market_wholesale_price ?? $product?->min_selling_price ?? 0);
+    }
+
+    public function isBundledSupplierLine(): bool
+    {
+        return QuotationQuantityResolver::isBundledSupplierUnit($this->product);
+    }
+
+    public function displayOrderQuantity(): float
+    {
+        return QuotationQuantityResolver::orderQuantity($this, $this->product);
+    }
+
+    public function displayStockQuantity(): float
+    {
+        return QuotationQuantityResolver::stockQuantity($this, $this->product);
+    }
+
+    public function effectiveQuantityPerPacket(): float
+    {
+        $this->loadMissing('product');
+        $productDefault = $this->product?->defaultQuantityPerPacket() ?? 1;
+        $saved = $this->quantity_per_packet !== null ? (float) $this->quantity_per_packet : null;
+
+        if ($saved !== null && $saved > 1) {
+            return max(0.01, $saved);
+        }
+
+        return max(0.01, $productDefault);
     }
 }

@@ -13,7 +13,7 @@
                             <div class="qs-section-title"><i class="fas fa-pen-to-square"></i> Enter Supplier Prices</div>
                             <p class="qs-section-sub" x-show="pricesExpanded">
                                 {{ $series->isImport()
-                                    ? 'Foreign unit prices, dimensions, and quantity per packet — MKT wholesale price defaults from product min price'
+                                    ? 'Foreign unit prices per pair/set where applicable, dimensions, and quantity per packet — MKT wholesale price defaults from product min price'
                                     : 'Unit prices and per-line transport in KES — MKT wholesale price defaults from product min price' }}
                             </p>
                             <p class="qs-section-sub" x-show="!pricesExpanded" x-cloak>
@@ -38,13 +38,13 @@
                           @submit="onPricesFormSubmit()">
                 @csrf
                 @method('PATCH')
-                <div class="mi-table-wrap overflow-x-auto">
-                    <table class="mi-table text-sm">
+                <div class="mi-table-wrap overflow-x-auto qs-prices-table-wrap">
+                    <table class="mi-table text-sm qs-prices-table">
                         <thead>
                             <tr>
                                 <th>Part Number</th>
                                         <th>Product</th>
-                                        <th>Quantity</th>
+                                        <th>Order Qty</th>
                                 @if ($series->isImport())
                                     <th>Unit Price ({{ $series->currency }})</th>
                                             <th>Quantity per Packet</th>
@@ -60,18 +60,24 @@
                         <tbody>
                             @foreach ($series->items as $index => $item)
                                         @php
-                                            $qty = (float) $item->quantity;
-                                            $qtyPerPacket = (float) (old('items.'.$index.'.quantity_per_packet', $item->quantity_per_packet ?: 1) ?: 1);
-                                            $derivedPackets = \App\Services\Procurement\ImportOrderCalculator::deriveNumberOfPackets($qty, $qtyPerPacket);
+                                            $stockQty = (float) $item->displayStockQuantity();
+                                            $orderQty = (float) $item->displayOrderQuantity();
+                                            $bundled = $item->isBundledSupplierLine();
+                                            $packaging = $item->product->packagingDefaults();
+                                            $qtyPerPacket = (float) old('items.'.$index.'.quantity_per_packet', $item->effectiveQuantityPerPacket());
+                                            $derivedPackets = \App\Services\Procurement\ImportOrderCalculator::deriveNumberOfPackets($stockQty, $qtyPerPacket);
                                             $savedPackets = old('items.'.$index.'.number_of_packets', $item->number_of_packets);
                                             $packetsOverride = (bool) old('items.'.$index.'.packets_override', $savedPackets !== null && abs((float) $savedPackets - $derivedPackets) > 0.009);
                                             $productMkt = (float) $item->product->min_selling_price;
                                             $savedMkt = old('items.'.$index.'.market_wholesale_price', $item->market_wholesale_price);
                                             $mktOverride = (bool) old('items.'.$index.'.market_wholesale_override', $savedMkt !== null && abs((float) $savedMkt - $productMkt) > 0.009);
+                                            $lineWidth = old('items.'.$index.'.width', $item->width ?? $packaging['width']);
+                                            $lineLength = old('items.'.$index.'.length', $item->length ?? $packaging['length']);
+                                            $lineHeight = old('items.'.$index.'.height', $item->height ?? $packaging['height']);
                                         @endphp
                                         <tr x-data="orderPriceLine(@js([
                                             'isImport' => $series->isImport(),
-                                            'quantity' => $qty,
+                                            'quantity' => $stockQty,
                                             'qtyPerPacket' => $qtyPerPacket,
                                             'savedPackets' => $savedPackets !== null ? (float) $savedPackets : null,
                                             'overridePackets' => $packetsOverride,
@@ -81,7 +87,13 @@
                                         ]))" x-init="init()">
                                             <td class="font-medium">{{ $item->product->part_number }}</td>
                                             <td class="text-gray-500 max-w-[10rem] truncate">{{ $item->product->productName?->name ?? $item->product->name }}</td>
-                                            <td><span class="mi-cat-badge">{{ number_format($item->quantity, 0) }}</span></td>
+                                            <td>
+                                                <span class="mi-cat-badge">{{ number_format($orderQty, 0) }}</span>
+                                                @if ($bundled)
+                                                    <span class="block text-[0.62rem] text-gray-400 mt-0.5">{{ $item->product->supplierQuantityLabel() }}</span>
+                                                @endif
+                                                <span class="block text-[0.62rem] text-gray-400 mt-0.5">{{ number_format($stockQty, 0) }} stock pcs</span>
+                                            </td>
                                     <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
                                     @if ($series->isImport())
                                                 <td><input type="number" step="0.0001" min="0" name="items[{{ $index }}][unit_price_foreign]" value="{{ old('items.'.$index.'.unit_price_foreign', $item->unit_price_foreign ?? $item->unit_price) }}" class="mi-input qs-order-input"></td>
@@ -108,14 +120,12 @@
                                                         </button>
                                                     </div>
                                                 </td>
-                                                <td class="whitespace-nowrap">
-                                                    <div class="flex items-center gap-1">
-                                                        <input type="number" step="0.0001" min="0" name="items[{{ $index }}][width]" value="{{ old('items.'.$index.'.width', $item->width) }}" class="mi-input w-16" placeholder="W" title="Width">
-                                                        <span class="text-gray-300">×</span>
-                                                        <input type="number" step="0.0001" min="0" name="items[{{ $index }}][length]" value="{{ old('items.'.$index.'.length', $item->length) }}" class="mi-input w-16" placeholder="L" title="Length">
-                                                        <span class="text-gray-300">×</span>
-                                                        <input type="number" step="0.0001" min="0" name="items[{{ $index }}][height]" value="{{ old('items.'.$index.'.height', $item->height) }}" class="mi-input w-16" placeholder="H" title="Height">
-                                                    </div>
+                                                <td class="qs-dimension-cell">
+                                                    <input type="number" step="0.0001" min="0" name="items[{{ $index }}][width]" value="{{ $lineWidth }}" class="mi-input qs-dimension-input" placeholder="W" title="Width (m)">
+                                                    <span class="qs-dimension-sep" aria-hidden="true">×</span>
+                                                    <input type="number" step="0.0001" min="0" name="items[{{ $index }}][length]" value="{{ $lineLength }}" class="mi-input qs-dimension-input" placeholder="L" title="Length (m)">
+                                                    <span class="qs-dimension-sep" aria-hidden="true">×</span>
+                                                    <input type="number" step="0.0001" min="0" name="items[{{ $index }}][height]" value="{{ $lineHeight }}" class="mi-input qs-dimension-input" placeholder="H" title="Height (m)">
                                                 </td>
                                     @else
                                                 <td><input type="number" step="0.01" min="0" name="items[{{ $index }}][unit_price]" value="{{ old('items.'.$index.'.unit_price', $item->unit_price) }}" class="mi-input qs-order-input"></td>
@@ -196,7 +206,20 @@
     </div>
 
             <div x-show="pricesSaved" class="qs-summary-body" :class="{ 'qs-summary-stale': formDirty && @js($series->isCalculated()) }">
-                @include('quotation-series.partials.order-summary-table')
+                @php
+                    $negativeMarginLines = $series->isCalculated()
+                        ? $series->items->filter(fn ($line) => $line->margin_amount !== null && (float) $line->margin_amount < 0)
+                        : collect();
+                @endphp
+                @if ($negativeMarginLines->isNotEmpty() && $series->canRemoveItems())
+                    <div class="qs-negative-margin-banner">
+                        <p class="font-semibold"><i class="fas fa-triangle-exclamation text-red-500 mr-1"></i> Negative margin on {{ $negativeMarginLines->count() }} line(s)</p>
+                        <p class="mt-1 text-red-800">Remove unprofitable items with the <i class="fas fa-trash-can text-xs"></i> action, then recalculate margins.</p>
+                    </div>
+                @endif
+                <div class="qs-summary-table-wrap">
+                    @include('quotation-series.partials.order-summary-table')
+                </div>
             </div>
 
     @if ($series->canConfirm())
@@ -236,7 +259,20 @@
             </div>
         </div>
         <div class="qs-summary-body">
-            @include('quotation-series.partials.order-summary-table')
+            @php
+                $negativeMarginLines = $series->isCalculated()
+                    ? $series->items->filter(fn ($line) => $line->margin_amount !== null && (float) $line->margin_amount < 0)
+                    : collect();
+            @endphp
+            @if ($negativeMarginLines->isNotEmpty() && $series->canRemoveItems())
+                <div class="qs-negative-margin-banner">
+                    <p class="font-semibold"><i class="fas fa-triangle-exclamation text-red-500 mr-1"></i> Negative margin on {{ $negativeMarginLines->count() }} line(s)</p>
+                    <p class="mt-1 text-red-800">Remove unprofitable items with the <i class="fas fa-trash-can text-xs"></i> action, then recalculate margins.</p>
+                </div>
+            @endif
+            <div class="qs-summary-table-wrap">
+                @include('quotation-series.partials.order-summary-table')
+            </div>
         </div>
     </div>
 @else

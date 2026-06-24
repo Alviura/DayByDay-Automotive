@@ -80,13 +80,15 @@ class SaleService
             $sale->items()->delete();
             foreach ($items as $line) {
                 $product = Product::findOrFail($line['product_id']);
+                $saleQuantity = (float) $line['quantity'];
+                $this->assertSaleQuantity($product, $saleQuantity);
                 $unitPrice = $this->resolveUnitPrice($product, $line, $user, $saleType);
-                $this->assertAvailable($product, $shop, (float) $line['quantity']);
+                $this->assertAvailable($product, $shop, $saleQuantity);
                 $this->assertUnitPriceInRange($product, $unitPrice);
 
                 $sale->items()->create([
                     'product_id' => $product->id,
-                    'quantity' => $line['quantity'],
+                    'quantity' => $saleQuantity,
                     'unit_price' => $unitPrice,
                     'discount' => 0,
                 ]);
@@ -132,13 +134,13 @@ class SaleService
                 $balance = $this->inventory->getBalance($item->product, $sale->shop);
                 $unitCost = (float) ($balance?->average_cost ?? $item->product->cost_price ?? 0);
 
-                $this->inventory->release($item->product, $sale->shop, (float) $item->quantity);
+                $this->inventory->release($item->product, $sale->shop, $this->stockQuantityForItem($item));
 
                 $this->inventory->record(
                     $item->product,
                     $sale->shop,
                     'sale',
-                    -(float) $item->quantity,
+                    -$this->stockQuantityForItem($item),
                     $unitCost,
                     $sale,
                     $sale->receipt_number,
@@ -188,13 +190,13 @@ class SaleService
                 $balance = $this->inventory->getBalance($item->product, $sale->shop);
                 $unitCost = (float) ($balance?->average_cost ?? $item->product->cost_price ?? 0);
 
-                $this->inventory->release($item->product, $sale->shop, (float) $item->quantity);
+                $this->inventory->release($item->product, $sale->shop, $this->stockQuantityForItem($item));
 
                 $this->inventory->record(
                     $item->product,
                     $sale->shop,
                     'sale',
-                    -(float) $item->quantity,
+                    -$this->stockQuantityForItem($item),
                     $unitCost,
                     $sale,
                     $sale->receipt_number,
@@ -264,7 +266,7 @@ class SaleService
                     $item->product,
                     $sale->shop,
                     'sale',
-                    (float) $item->quantity,
+                    $this->stockQuantityForItem($item),
                     $unitCost,
                     $sale,
                     $sale->receipt_number,
@@ -358,7 +360,7 @@ class SaleService
     private function reserveItems(Sale $sale, Shop $shop): void
     {
         foreach ($sale->items as $item) {
-            $this->inventory->reserve($item->product, $shop, (float) $item->quantity);
+            $this->inventory->reserve($item->product, $shop, $this->stockQuantityForItem($item));
         }
     }
 
@@ -366,7 +368,7 @@ class SaleService
     {
         foreach ($sale->items as $item) {
             try {
-                $this->inventory->release($item->product, $shop, (float) $item->quantity);
+                $this->inventory->release($item->product, $shop, $this->stockQuantityForItem($item));
             } catch (InventoryException) {
                 // Reservation may already be cleared.
             }
@@ -422,12 +424,41 @@ class SaleService
         }
     }
 
-    private function assertAvailable(Product $product, Shop $shop, float $quantity): void
+    private function stockQuantityForItem(SaleItem $item): float
     {
-        if ($this->inventory->available($product, $shop) < $quantity) {
+        return $item->product->stockQuantityFromSaleQuantity((float) $item->quantity);
+    }
+
+    private function assertSaleQuantity(Product $product, float $saleQuantity): void
+    {
+        if ($saleQuantity <= 0) {
+            throw new \InvalidArgumentException("Quantity for {$product->part_number} must be greater than zero.");
+        }
+
+        if (! $product->isSoldAsBundle()) {
+            return;
+        }
+
+        if (abs($saleQuantity - round($saleQuantity)) > 0.001) {
+            throw new \InvalidArgumentException(
+                "{$product->part_number} must be sold in whole {$product->supplierQuantityLabel()}."
+            );
+        }
+    }
+
+    private function assertAvailable(Product $product, Shop $shop, float $saleQuantity): void
+    {
+        $stockNeeded = $product->stockQuantityFromSaleQuantity($saleQuantity);
+        $available = $this->inventory->available($product, $shop);
+
+        if ($available < $stockNeeded) {
+            $unitLabel = $product->orderUnitLabel();
+            $availableSellUnits = $product->maxSaleQuantityFromStock($available);
+
             throw new InventoryException(
                 "Insufficient stock for {$product->part_number}. Available: ".
-                $this->inventory->available($product, $shop)
+                number_format($availableSellUnits, 0).' '.$unitLabel.
+                ' ('.number_format($available, 0).' stock pcs).'
             );
         }
     }

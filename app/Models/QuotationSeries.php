@@ -248,7 +248,17 @@ class QuotationSeries extends Model implements ApprovableDocument
 
     public function canBulkAddItems(): bool
     {
-        return $this->status === 'quotation_draft';
+        return in_array($this->status, ['quotation_draft', 'order_draft'], true);
+    }
+
+    public function canRemoveItems(): bool
+    {
+        return in_array($this->status, ['quotation_draft', 'order_draft'], true);
+    }
+
+    public function canManageQuotationItems(): bool
+    {
+        return $this->canRemoveItems();
     }
 
     public function canProceedToOrder(): bool

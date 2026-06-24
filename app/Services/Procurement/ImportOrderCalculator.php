@@ -11,7 +11,11 @@ class ImportOrderCalculator
 {
     public function calculateLine(QuotationItem $item, Product $product, QuotationSeries $folder): QuotationItem
     {
-        $quantity = (float) $item->quantity;
+        $unitsPerSupplier = QuotationQuantityResolver::unitsPerSupplierUnit($product);
+        $bundled = QuotationQuantityResolver::isBundledSupplierUnit($product);
+        $orderQuantity = QuotationQuantityResolver::orderQuantity($item, $product);
+        $stockQuantity = QuotationQuantityResolver::stockQuantity($item, $product);
+
         $unitPriceForeign = (float) ($item->unit_price_foreign ?? $item->unit_price);
         $exchangeRate = (float) $folder->exchange_rate;
         $cbmRate = (float) $folder->cbm_rate;
@@ -19,23 +23,50 @@ class ImportOrderCalculator
         $width = (float) ($item->width ?? 0);
         $length = (float) ($item->length ?? 0);
         $height = (float) ($item->height ?? 0);
-        $quantityPerPacket = max(0.01, (float) ($item->quantity_per_packet ?: 1));
-        $numberOfPackets = self::deriveNumberOfPackets($quantity, $quantityPerPacket);
+        $quantityPerPacket = max(0.01, $item->effectiveQuantityPerPacket());
+        $numberOfPackets = (float) ($item->number_of_packets ?? 0) > 0
+            ? (float) $item->number_of_packets
+            : self::deriveNumberOfPackets($stockQuantity, $quantityPerPacket);
 
-        $totalCostForeign = $unitPriceForeign * $quantity;
+        $totalCostForeign = $unitPriceForeign * $orderQuantity;
         $unitPriceKsh = $unitPriceForeign * $exchangeRate;
         $cbmPerPacket = $width * $length * $height;
         $totalCbm = $cbmPerPacket * $numberOfPackets;
-        $transportPerUnit = $quantity > 0 ? ($totalCbm * $cbmRate) / $quantity : 0;
-        $unitCostArrival = $unitPriceKsh + $transportPerUnit;
+        $freightPerCbmPacket = $cbmPerPacket * $cbmRate;
+        $totalFreight = $freightPerCbmPacket * $numberOfPackets;
+
+        $supplierUnitsPerCbmPacket = QuotationQuantityResolver::supplierUnitsPerCbmPacket(
+            $quantityPerPacket,
+            $product
+        );
+        $transportPerPacket = $freightPerCbmPacket / $supplierUnitsPerCbmPacket;
+
+        if ($bundled) {
+            $transportPerSupplierUnit = $transportPerPacket;
+            $transportPerStockUnit = $unitsPerSupplier > 0
+                ? $transportPerSupplierUnit / $unitsPerSupplier
+                : 0;
+            $purchaseCostPerStockUnit = $unitsPerSupplier > 0
+                ? $unitPriceKsh / $unitsPerSupplier
+                : 0;
+            $unitCostArrival = $purchaseCostPerStockUnit + $transportPerStockUnit;
+        } else {
+            $transportPerSupplierUnit = $stockQuantity > 0 ? $totalFreight / $stockQuantity : 0;
+            $transportPerPacket = $freightPerCbmPacket;
+            $transportPerStockUnit = $transportPerSupplierUnit;
+            $unitCostArrival = $unitPriceKsh + $transportPerStockUnit;
+        }
+
         $wholesale = $item->resolveMarketWholesalePrice($product);
         $marginAmount = $wholesale - $unitCostArrival;
         $marginPercent = $wholesale > 0 ? ($marginAmount / $wholesale) * 100 : 0;
-        $actualTotalCost = $unitCostArrival * $quantity;
-        $expectedSales = $wholesale * $quantity;
-        $expectedMargin = $marginAmount * $quantity;
+        $actualTotalCost = $unitCostArrival * $stockQuantity;
+        $expectedSales = $wholesale * $stockQuantity;
+        $expectedMargin = $marginAmount * $stockQuantity;
 
         $item->fill([
+            'order_quantity' => round($orderQuantity, 2),
+            'quantity' => $stockQuantity,
             'unit_price' => round($unitPriceForeign, 4),
             'unit_price_foreign' => round($unitPriceForeign, 4),
             'unit_price_ksh' => round($unitPriceKsh, 2),
@@ -44,8 +75,9 @@ class ImportOrderCalculator
             'cbm_per_packet' => round($cbmPerPacket, 6),
             'total_cbm' => round($totalCbm, 4),
             'cbm' => round($totalCbm, 4),
-            'transport_per_unit' => round($transportPerUnit, 2),
-            'freight_charge' => round($transportPerUnit * $quantity, 2),
+            'transport_per_packet' => round($bundled ? $transportPerSupplierUnit : $transportPerPacket, 2),
+            'transport_per_unit' => round($transportPerStockUnit, 2),
+            'freight_charge' => round($totalFreight, 2),
             'market_wholesale_price' => round($wholesale, 2),
             'total_purchase_price' => round($totalCostForeign, 2),
             'total_cost' => round($totalCostForeign, 2),
@@ -62,11 +94,11 @@ class ImportOrderCalculator
         return $item;
     }
 
-    public static function deriveNumberOfPackets(float $quantity, float $quantityPerPacket): float
+    public static function deriveNumberOfPackets(float $stockQuantity, float $quantityPerPacket): float
     {
         $quantityPerPacket = max(0.01, $quantityPerPacket ?: 1);
 
-        return round($quantity / $quantityPerPacket, 2);
+        return round($stockQuantity / $quantityPerPacket, 2);
     }
 
     /**
@@ -78,7 +110,7 @@ class ImportOrderCalculator
         return [
             'total_purchase_price' => round((float) $items->sum('total_purchase_price'), 2),
             'total_cbm' => round((float) $items->sum('total_cbm'), 4),
-            'total_transport_cost' => round((float) $items->sum(fn (QuotationItem $item) => (float) $item->transport_per_unit * (float) $item->quantity), 2),
+            'total_transport_cost' => round((float) $items->sum('freight_charge'), 2),
             'total_actual_cost' => round((float) $items->sum('actual_total_cost'), 2),
             'total_expected_sales' => round((float) $items->sum('expected_sales'), 2),
             'total_expected_margin' => round((float) $items->sum('expected_margin'), 2),

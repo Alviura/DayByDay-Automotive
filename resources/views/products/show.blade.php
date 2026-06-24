@@ -142,6 +142,30 @@
                                     @endif
                                 </dd>
                             </div>
+                            @if ($product->isSoldAsBundle())
+                                <div class="mi-detail-item">
+                                    <dt class="mi-detail-label"><i class="fas fa-boxes-stacked"></i> Sold as</dt>
+                                    <dd class="mi-detail-value">{{ $product->orderUnitLabel() }} · {{ number_format($product->unitsPerSupplierUnit(), 0) }} stock pcs each</dd>
+                                </div>
+                            @endif
+                            @if ($product->hasPackagingDimensions())
+                                <div class="mi-detail-item">
+                                    <dt class="mi-detail-label"><i class="fas fa-ruler"></i> Pack dimensions (m)</dt>
+                                    <dd class="mi-detail-value font-mono text-sm">
+                                        {{ number_format($product->width, 4) }}
+                                        × {{ number_format($product->length, 4) }}
+                                        × {{ number_format($product->height, 4) }}
+                                    </dd>
+                                </div>
+                                <div class="mi-detail-item">
+                                    <dt class="mi-detail-label"><i class="fas fa-box"></i> Qty per packet</dt>
+                                    <dd class="mi-detail-value">{{ number_format($product->quantity_per_packet, 0) }}</dd>
+                                </div>
+                                <div class="mi-detail-item">
+                                    <dt class="mi-detail-label"><i class="fas fa-cube"></i> CBM per packet</dt>
+                                    <dd class="mi-detail-value font-mono text-sm">{{ number_format($product->cbmPerPacket(), 6) }} m³</dd>
+                                </div>
+                            @endif
                             <div class="mi-detail-item">
                                 <dt class="mi-detail-label"><i class="fas fa-car-side"></i> Primary Fitment</dt>
                                 <dd class="mi-detail-value">

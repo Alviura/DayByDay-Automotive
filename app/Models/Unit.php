@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\SupplierSellAs;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -35,5 +36,17 @@ class Unit extends Model
             $q->where('name', 'like', "%{$term}%")
                 ->orWhere('abbreviation', 'like', "%{$term}%");
         });
+    }
+
+    public function supplierSellAs(): ?SupplierSellAs
+    {
+        $key = strtolower(trim($this->abbreviation ?: $this->name ?: ''));
+
+        return match ($key) {
+            'pr', 'pair' => SupplierSellAs::Pair,
+            'set' => SupplierSellAs::Set,
+            'pcs', 'pc', 'piece' => SupplierSellAs::Piece,
+            default => null,
+        };
     }
 }

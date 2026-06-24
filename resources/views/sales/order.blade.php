@@ -145,15 +145,24 @@
                                         </td>
                                         <td>
                                             <div class="pos-qty-wrap">
+                                                <span class="text-[0.65rem] font-bold uppercase text-orange-600 mr-1 shrink-0"
+                                                      x-text="line.order_unit_label || 'PCS'"></span>
                                                 <button type="button" class="pos-qty-btn" @click="adjustQty(index, -1)">
                                                     <i class="fas fa-minus"></i>
                                                 </button>
-                                                <input type="number" step="0.01" min="0.01" class="pos-qty-input"
-                                                       x-model.number="line.quantity" @change="recalc()">
+                                                <input type="number"
+                                                       :step="line.is_bundled ? 1 : 0.01"
+                                                       :min="line.is_bundled ? 1 : 0.01"
+                                                       class="pos-qty-input"
+                                                       x-model.number="line.quantity"
+                                                       @change="normalizeQty(line); recalc()">
                                                 <button type="button" class="pos-qty-btn" @click="adjustQty(index, 1)">
                                                     <i class="fas fa-plus"></i>
                                                 </button>
                                             </div>
+                                            <p class="text-[0.62rem] text-gray-400 mt-0.5 text-center"
+                                               x-show="line.is_bundled && line.units_per_sell_unit > 1"
+                                               x-text="stockPcsHint(line)"></p>
                                         </td>
                                         <td class="text-sm text-gray-600" x-text="formatMoney(line.list_price)"></td>
                                         <td class="font-bold text-sm text-orange-700" x-text="formatMoney(line.quantity * line.list_price)"></td>
@@ -326,6 +335,10 @@
                             min_price: minPrice,
                             max_price: maxPrice,
                             list_price: this.listPriceFor(minPrice, maxPrice),
+                            order_unit_label: product.order_unit_label || 'PCS',
+                            is_bundled: !!product.is_bundled,
+                            units_per_sell_unit: product.units_per_sell_unit || 1,
+                            available_sell_units: product.available_sell_units,
                         });
                     }
                     this.recalc();
@@ -356,12 +369,23 @@
                 adjustQty(index, delta) {
                     const line = this.cart[index];
                     const next = parseFloat(line.quantity) + delta;
-                    if (next < 0.01) {
+                    if (line.is_bundled ? next < 1 : next < 0.01) {
                         this.removeLine(index);
                         return;
                     }
-                    line.quantity = next;
+                    line.quantity = line.is_bundled ? Math.round(next) : next;
                     this.recalc();
+                },
+
+                stockPcsHint(line) {
+                    const qty = parseFloat(line.quantity) || 0;
+                    const mult = parseFloat(line.units_per_sell_unit) || 1;
+                    return '= ' + Math.round(qty * mult) + ' stock pcs';
+                },
+
+                normalizeQty(line) {
+                    if (! line.is_bundled) return;
+                    line.quantity = Math.max(1, Math.round(parseFloat(line.quantity) || 1));
                 },
 
                 removeLine(index) {

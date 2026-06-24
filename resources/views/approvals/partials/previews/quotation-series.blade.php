@@ -37,7 +37,13 @@
                             <p class="mi-pkg-name">{{ $item->product->part_number }}</p>
                             <p class="text-xs text-gray-500">{{ $item->product->name }}</p>
                         </td>
-                        <td>{{ number_format((float) $item->quantity, 0) }}</td>
+                        <td>
+                            {{ number_format($item->displayOrderQuantity(), 0) }}
+                            @if ($item->isBundledSupplierLine())
+                                <span class="block text-[0.62rem] text-gray-400">{{ $item->product->supplierQuantityLabel() }}</span>
+                            @endif
+                            <span class="block text-[0.62rem] text-gray-400">{{ number_format($item->displayStockQuantity(), 0) }} pcs</span>
+                        </td>
                         <td>{{ number_format($item->landedUnitCost(), 2) }}</td>
                         <td>{{ number_format((float) ($item->actual_total_cost ?? $item->total_cost ?? 0), 2) }}</td>
                     </tr>

@@ -16,7 +16,8 @@ class BulkQuotationItemsRequest extends FormRequest
         return [
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
-            'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
+            'items.*.order_quantity' => ['required', 'numeric', 'min:0.01'],
+            'items.*.quantity' => ['sometimes', 'numeric', 'min:0.01'],
         ];
     }
 }

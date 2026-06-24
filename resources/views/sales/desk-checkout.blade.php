@@ -17,6 +17,7 @@
             'unit_price' => (float) $i->unit_price,
             'min_selling_price' => (float) $i->product->min_selling_price,
             'max_selling_price' => (float) $i->product->max_selling_price,
+            'order_unit_label' => $i->product->orderUnitLabel(),
         ])->values()),
         customerName: @js($sale->customer_name ?? ''),
         customerPhone: @js($sale->customer_phone ?? ''),
@@ -114,7 +115,10 @@
                                         <p class="font-semibold text-sm text-gray-900" x-text="line.part_number"></p>
                                         <p class="text-xs text-gray-500 mt-0.5" x-text="line.name"></p>
                                     </td>
-                                    <td class="font-bold text-gray-700" x-text="line.quantity"></td>
+                                    <td class="font-bold text-gray-700">
+                                        <span x-text="line.quantity"></span>
+                                        <span class="text-xs font-normal text-gray-400" x-text="line.order_unit_label || 'PCS'"></span>
+                                    </td>
                                     <td>
                                         <input type="number" step="0.01" min="0"
                                                class="mi-input w-full !text-sm"
