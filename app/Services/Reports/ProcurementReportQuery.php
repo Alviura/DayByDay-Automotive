@@ -7,12 +7,14 @@ use App\Models\PurchaseOrder;
 use App\Models\QuotationSeries;
 use Illuminate\Support\Collection;
 
-class ProcurementReportQuery
+/** Data contract §4.3 — procurement by created_at / order_date / received_at. */
+class ProcurementReportQuery extends AbstractReportQuery
 {
     public function run(ReportFilters $filters): array
     {
         $seriesQuery = QuotationSeries::query()
-            ->whereBetween('created_at', [$filters->from, $filters->to]);
+            ->whereBetween('created_at', [$filters->from, $filters->to])
+            ->when($filters->supplierId, fn ($q) => $q->where('supplier_id', $filters->supplierId));
 
         $statusBreakdown = (clone $seriesQuery)
             ->selectRaw('status, COUNT(*) as count, SUM(COALESCE(total_actual_cost, total_landing_cost)) as value')
@@ -21,10 +23,12 @@ class ProcurementReportQuery
             ->get();
 
         $poQuery = PurchaseOrder::query()
-            ->whereBetween('order_date', [$filters->from->toDateString(), $filters->to->toDateString()]);
+            ->whereBetween('order_date', [$filters->from->toDateString(), $filters->to->toDateString()])
+            ->when($filters->supplierId, fn ($q) => $q->where('supplier_id', $filters->supplierId));
 
         $grnQuery = GoodsReceiptNote::query()
-            ->whereBetween('received_at', [$filters->from, $filters->to]);
+            ->whereBetween('received_at', [$filters->from, $filters->to])
+            ->where('status', 'posted');
 
         $summary = [
             'series_open' => QuotationSeries::whereNotIn('status', ['closed', 'cancelled'])->count(),
@@ -38,29 +42,39 @@ class ProcurementReportQuery
             ->with('supplier:id,name')
             ->latest()
             ->limit(15)
-            ->get(['id', 'series_number', 'title', 'supplier_id', 'status', 'total_actual_cost', 'total_landing_cost', 'currency', 'created_at']);
+            ->get();
 
         $recentPos = (clone $poQuery)
             ->with('supplier:id,name')
             ->latest()
             ->limit(15)
-            ->get(['id', 'po_number', 'supplier_id', 'status', 'total', 'currency', 'order_date']);
+            ->get();
 
         return compact('summary', 'statusBreakdown', 'recentSeries', 'recentPos');
     }
 
     public function csvRows(ReportFilters $filters): Collection
     {
-        $data = $this->run($filters);
+        return $this->truncateIfNeeded(
+            PurchaseOrder::query()
+                ->with('supplier:id,name')
+                ->whereBetween('order_date', [$filters->from->toDateString(), $filters->to->toDateString()])
+                ->when($filters->supplierId, fn ($q) => $q->where('supplier_id', $filters->supplierId))
+                ->orderBy('order_date')
+                ->get()
+                ->map(fn ($po) => [
+                    'PO Number' => $po->po_number,
+                    'Supplier' => $po->supplier?->name,
+                    'Status' => $po->status,
+                    'Total' => $po->total,
+                    'Currency' => $po->currency,
+                    'Order Date' => $po->order_date,
+                ])
+        );
+    }
 
-        return $data['recentSeries']->map(fn ($series) => [
-            'Series' => $series->displayName(),
-            'Reference' => $series->series_number,
-            'Supplier' => $series->supplier?->name,
-            'Status' => $series->statusLabel(),
-            'Actual Cost' => $series->total_actual_cost ?: $series->total_landing_cost,
-            'Currency' => $series->currency,
-            'Created' => $series->created_at?->format('Y-m-d'),
-        ]);
+    public function csvHeaders(): array
+    {
+        return ['PO Number', 'Supplier', 'Status', 'Total', 'Currency', 'Order Date'];
     }
 }

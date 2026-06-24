@@ -7,7 +7,8 @@ use App\Models\StockTransfer;
 use App\Models\TransferRequest;
 use Illuminate\Support\Collection;
 
-class TransferReportQuery
+/** Data contract §4.4 — requests by created_at; transfers by dispatched_at. */
+class TransferReportQuery extends AbstractReportQuery
 {
     public function run(ReportFilters $filters): array
     {
@@ -15,11 +16,8 @@ class TransferReportQuery
             ->whereBetween('created_at', [$filters->from, $filters->to])
             ->when($filters->shopId, function ($q) use ($filters) {
                 $q->where(function ($inner) use ($filters) {
-                    $inner->where(function ($q) use ($filters) {
-                        $q->where('destination_type', Shop::class)->where('destination_id', $filters->shopId);
-                    })->orWhere(function ($q) use ($filters) {
-                        $q->where('source_type', Shop::class)->where('source_id', $filters->shopId);
-                    });
+                    $inner->where(fn ($q) => $q->where('destination_type', Shop::class)->where('destination_id', $filters->shopId))
+                        ->orWhere(fn ($q) => $q->where('source_type', Shop::class)->where('source_id', $filters->shopId));
                 });
             });
 
@@ -35,7 +33,7 @@ class TransferReportQuery
         $summary = [
             'requests_in_period' => (clone $requestQuery)->count(),
             'pending' => TransferRequest::where('status', 'submitted')->count(),
-            'in_transit' => StockTransfer::whereIn('status', ['dispatched', 'in_transit'])->count(),
+            'in_transit' => StockTransfer::whereIn('status', ['dispatched', 'in_transit', 'partially_received'])->count(),
             'dispatched_in_period' => (clone $transferQuery)->count(),
             'completed_in_period' => (clone $requestQuery)->where('status', 'fulfilled')->count(),
         ];
@@ -51,14 +49,30 @@ class TransferReportQuery
 
     public function csvRows(ReportFilters $filters): Collection
     {
-        $data = $this->run($filters);
+        return $this->truncateIfNeeded(
+            TransferRequest::query()
+                ->with(['source', 'destination'])
+                ->whereBetween('created_at', [$filters->from, $filters->to])
+                ->when($filters->shopId, function ($q) use ($filters) {
+                    $q->where(function ($inner) use ($filters) {
+                        $inner->where(fn ($q) => $q->where('destination_type', Shop::class)->where('destination_id', $filters->shopId))
+                            ->orWhere(fn ($q) => $q->where('source_type', Shop::class)->where('source_id', $filters->shopId));
+                    });
+                })
+                ->orderBy('created_at')
+                ->get()
+                ->map(fn (TransferRequest $r) => [
+                    'Request' => $r->request_number,
+                    'Route' => $r->routeLabel(),
+                    'Type' => $r->typeLabel(),
+                    'Status' => $r->statusLabel(),
+                    'Created' => $r->created_at?->format('Y-m-d H:i'),
+                ])
+        );
+    }
 
-        return $data['recentRequests']->map(fn (TransferRequest $request) => [
-            'Request' => $request->request_number,
-            'Route' => $request->routeLabel(),
-            'Type' => $request->typeLabel(),
-            'Status' => $request->statusLabel(),
-            'Created' => $request->created_at?->format('Y-m-d'),
-        ]);
+    public function csvHeaders(): array
+    {
+        return ['Request', 'Route', 'Type', 'Status', 'Created'];
     }
 }
